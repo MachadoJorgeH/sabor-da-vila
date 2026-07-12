@@ -57,48 +57,6 @@ npm run preview   # preview do build
 
 O app já vem apontado para um projeto Firebase (`src/firebase.ts`). Pra usar outro projeto, troque o `firebaseConfig` nesse arquivo pelas credenciais do seu — esses valores não são segredos (a segurança fica nas regras do Firestore), mas cada instalação normalmente aponta pro seu próprio projeto.
 
-### Regras do Firestore
-
-As coleções `vendas` e `logs` são de auditoria: qualquer usuário logado pode ler e criar, mas ninguém pode editar ou apagar. As demais (`cardapio`, `estoque`, `pedidos`, `gastos`) permitem leitura e escrita para qualquer usuário autenticado:
-
-```js
-rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    function estaLogado() {
-      return request.auth != null;
-    }
-
-    match /cardapio/{itemId} {
-      allow read, write: if estaLogado();
-    }
-
-    match /estoque/{itemId} {
-      allow read, write: if estaLogado();
-    }
-
-    match /pedidos/{pedidoId} {
-      allow read, write: if estaLogado();
-    }
-
-    match /gastos/{gastoId} {
-      allow read, write: if estaLogado();
-    }
-
-    match /vendas/{vendaId} {
-      allow read, create: if estaLogado();
-      allow update, delete: if false;
-    }
-
-    match /logs/{logId} {
-      allow read, create: if estaLogado();
-      allow update, delete: if false;
-    }
-  }
-}
-```
 
 ## Estrutura do projeto
 
