@@ -1,75 +1,114 @@
-# React + TypeScript + Vite
+# Sabor Da Vila — Painel de Gestão
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Painel administrativo para um restaurante (café da manhã, almoço e pizzas): cardápio, estoque, pedidos com acompanhamento em tempo real, financeiro e uma tela de exibição para a cozinha. Feito em React + TypeScript + Firebase.
 
-Currently, two official plugins are available:
+![Tela de login](docs/screenshots/login.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Funcionalidades
 
-## React Compiler
+### Cardápio e Estoque
+Cadastro, edição e remoção de itens do cardápio (por categoria) e controle de estoque com custo de reposição.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+![Cardápio](docs/screenshots/cardapio.png)
 
-## Expanding the ESLint configuration
+### Pedidos
+Quadro em tempo real com as colunas Recebido → Em preparo → Pronto → Entregue. Cada pedido pode vir do salão (mesa/comanda) ou de um app de delivery (iFood, 99Food, etc. — identificado por um código livre), e aceita observações como restrições ou trocas ("sem alface, sem cebola"), destacadas no card.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+![Pedidos](docs/screenshots/pedidos.png)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Modo Cozinha
+Tela separada (`/cozinha`), sem menu, pensada pra rodar em tela cheia num monitor da cozinha. Cards grandes, cronômetro ao vivo por pedido e destaque progressivo (dourado → vermelho, com aviso pulsante) para pedidos parados há muito tempo.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+![Modo cozinha](docs/screenshots/cozinha.png)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Financeiro
+Resumo de vendas e gastos (hoje, últimos 7 dias, mês atual), quebra de receita por canal (salão vs. delivery) e gráfico comparativo. Toda venda é gerada automaticamente quando um pedido chega em "Entregue".
 
+![Financeiro](docs/screenshots/financeiro.png)
+
+### Histórico e Logs
+- **Histórico**: consulta de vendas por dia, com filtro por canal e busca por mesa/item.
+- **Logs**: auditoria de tudo que é criado, editado ou removido no sistema (pedido, cardápio, estoque, gasto), com data, ação e usuário responsável.
+
+## Stack
+
+- [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vite.dev/)
+- [Tailwind CSS v4](https://tailwindcss.com/)
+- [Firebase](https://firebase.google.com/) (Auth + Firestore, com cache local persistente)
+- [React Router](https://reactrouter.com/)
+- [Recharts](https://recharts.org/) para os gráficos
+- [Lucide](https://lucide.dev/) para os ícones
+
+## Rodando localmente
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Outros scripts disponíveis:
+
+```bash
+npm run build     # build de produção
+npm run lint      # eslint
+npm run preview   # preview do build
+```
+
+O app já vem apontado para um projeto Firebase (`src/firebase.ts`). Pra usar outro projeto, troque o `firebaseConfig` nesse arquivo pelas credenciais do seu — esses valores não são segredos (a segurança fica nas regras do Firestore), mas cada instalação normalmente aponta pro seu próprio projeto.
+
+### Regras do Firestore
+
+As coleções `vendas` e `logs` são de auditoria: qualquer usuário logado pode ler e criar, mas ninguém pode editar ou apagar. As demais (`cardapio`, `estoque`, `pedidos`, `gastos`) permitem leitura e escrita para qualquer usuário autenticado:
 
 ```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+rules_version = '2';
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+service cloud.firestore {
+  match /databases/{database}/documents {
 
+    function estaLogado() {
+      return request.auth != null;
+    }
+
+    match /cardapio/{itemId} {
+      allow read, write: if estaLogado();
+    }
+
+    match /estoque/{itemId} {
+      allow read, write: if estaLogado();
+    }
+
+    match /pedidos/{pedidoId} {
+      allow read, write: if estaLogado();
+    }
+
+    match /gastos/{gastoId} {
+      allow read, write: if estaLogado();
+    }
+
+    match /vendas/{vendaId} {
+      allow read, create: if estaLogado();
+      allow update, delete: if false;
+    }
+
+    match /logs/{logId} {
+      allow read, create: if estaLogado();
+      allow update, delete: if false;
+    }
+  }
+}
+```
+
+## Estrutura do projeto
+
+```
+src/
+  components/   Layout (sidebar/header) e proteção de rota
+  context/      Contexto de autenticação
+  hooks/        Um hook por domínio (usePedidos, useCardapio, useFinanceiro, ...)
+  pages/        Uma página por rota
+  services/     Acesso ao Firestore (um arquivo por coleção)
+  types/        Tipos e constantes de cada domínio
+  utils/        Formatação de data/moeda
 ```
