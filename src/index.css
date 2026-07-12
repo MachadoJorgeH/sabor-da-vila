@@ -1,0 +1,153 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-gold: #B89642;
+  --color-gold-light: #E0CA92;
+  --color-olive: #6F7A4A;
+  --color-paprika: #C6362B;
+  --color-ink: #241C10;
+  --color-chalk: #EDE6D6;
+  --color-sidebar: #191919;
+
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F5F5F5;
+  --color-text: #1A1A1A;
+  --color-text-muted: #6B7280;
+  --color-border: #E5E7EB;
+
+  --font-heading: "Montserrat", sans-serif;
+  --font-body: "Poppins", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 40px;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-surface: #1F1F1F;
+  --color-surface-alt: #141414;
+  --color-text: #F5F5F5;
+  --color-text-muted: #9CA3AF;
+  --color-border: #333333;
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(90deg, #B89642, #E0CA92, #B89642);
+}
+
+.bg-gold-gradient-diagonal {
+  background: linear-gradient(135deg, #B89642, #E0CA92);
+}
+
+.bg-page-gradient {
+  background: linear-gradient(180deg, #FBF8F2 0%, #F3EEE2 100%);
+}
+
+.dark .bg-page-gradient {
+  background: linear-gradient(180deg, #1A1A1A 0%, #141414 100%);
+}
+
+.bg-card-soft {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAF7F0 100%);
+}
+
+.dark .bg-card-soft {
+  background: linear-gradient(135deg, #1F1F1F 0%, #1A1A1A 100%);
+}
+
+.text-gold-contrast {
+  color: var(--color-ink);
+}
+
+.bg-awning-stripes {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-gold) 0px,
+    var(--color-gold) 22px,
+    var(--color-gold-light) 22px,
+    var(--color-gold-light) 44px
+  );
+}
+
+@keyframes ticket-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Efeito de cupom rasgado — usado em pontos de destaque (comanda de login, tickets de pedido) */
+.ticket-edge-top,
+.ticket-edge-bottom {
+  position: relative;
+}
+
+.ticket-edge-top::before,
+.ticket-edge-bottom::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  height: 13px;
+  background: inherit;
+  -webkit-mask-image: radial-gradient(circle at 7px 7px, transparent 6.5px, black 7px);
+  mask-image: radial-gradient(circle at 7px 7px, transparent 6.5px, black 7px);
+  -webkit-mask-size: 14px 14px;
+  mask-size: 14px 14px;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+}
+
+.ticket-edge-top::before {
+  top: -6px;
+}
+
+.ticket-edge-bottom::after {
+  bottom: -6px;
+}
+
+@keyframes ticket-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Selo carimbado — status concluído, como um carimbo de tinta na comanda */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  padding: 0.0625rem 0.4rem;
+  transform: rotate(-3deg);
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text);
+}
