@@ -1,0 +1,10 @@
+# Segredos e configuração de ambiente — NUNCA versionar
+.env
+.env.local
+
+# Binários compilados
+*.exe
+/bin/
+
+# Logs
+*.log
