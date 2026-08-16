@@ -87,7 +87,7 @@ func (r *Repositorio) BuscarPorID(ctx context.Context, id uuid.UUID) (Item, erro
 func (r *Repositorio) Atualizar(ctx context.Context, id uuid.UUID, entrada EntradaItem) (Item, error) {
 	const sql = `
 		UPDATE cardapio_itens
-		SET nome = $2, preco_centavos = &3, categoria = $4, foto_url = $5, atualizado_em = now()
+		SET nome = $2, preco_centavos = $3, categoria = $4, foto_url = $5, atualizado_em = now()
 		WHERE id = $1
 		RETURNING id, nome, preco_centavos, categoria, foto_url, ativo, criado_em, atualizado_em`
 	
@@ -107,7 +107,7 @@ func (r *Repositorio) Atualizar(ctx context.Context, id uuid.UUID, entrada Entra
 }
 
 func (r *Repositorio) Desativar(ctx context.Context, id uuid.UUID) error{
-	const sql = `UPDATE cardapio_itens SET ativo = false, atualizado_em = now(), WHERE id = $1`
+	const sql = `UPDATE cardapio_itens SET ativo = false, atualizado_em = now() WHERE id = $1`
 
 	tag, err := r.db.Exec(ctx, sql, id)
 	if err != nil{

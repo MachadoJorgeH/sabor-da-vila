@@ -2,10 +2,13 @@ package cardapio
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var ErrValidacao = errors.New("dados inválidos")
 
 type Item struct {
 	ID            uuid.UUID `json:"id"`
@@ -35,14 +38,14 @@ var categoriasValidas = map[string]bool{
 
 func (e EntradaItem) Validar() error {
 	if e.Nome == "" {
-		return errors.New("nome é obrigatório")
+		return fmt.Errorf("%w: nome é obrigatório", ErrValidacao)
 	}
 	if e.PrecoCentavos < 0 {
-		return errors.New("preço não pode ser negativo")
+		return fmt.Errorf("%w: preço não pode ser negativo", ErrValidacao)
 	}
 
 	if !categoriasValidas[e.Categoria] {
-		return errors.New("categoria inválida")
+		return fmt.Errorf("%w: categoria inválida", ErrValidacao)
 	}
 	return nil
 }

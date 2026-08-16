@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/MachadoJorgeH/sabor-da-vila/backend/internal/cardapio"
 	"github.com/MachadoJorgeH/sabor-da-vila/backend/internal/config"
 	"github.com/MachadoJorgeH/sabor-da-vila/backend/internal/httpx"
 
@@ -37,6 +38,11 @@ func main() {
 	mux.HandleFunc("GET /api/saude", func(w http.ResponseWriter, r *http.Request){
 		httpx.EscreverJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
+
+	repoCardapio := cardapio.NovoRepositorio(pool)
+	servicoCardapio := cardapio.NovoServico(repoCardapio)
+	handlerCardapio := cardapio.NovoHandler(servicoCardapio)
+	handlerCardapio.RegistrarRotas(mux)
 
 	endereco := ":" + cfg.PortaHTTP
 	log.Printf("servidor escutando em http://localhost%s", endereco)
