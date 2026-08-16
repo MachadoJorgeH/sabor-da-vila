@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/MachadoJorgeH/sabor-da-vila/backend/internal/config"
+	"github.com/MachadoJorgeH/sabor-da-vila/backend/internal/httpx"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -34,10 +34,8 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /api/saude", func(w http.ResponseWriter, r *http.Request)  {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{"ok" : true})
+	mux.HandleFunc("GET /api/saude", func(w http.ResponseWriter, r *http.Request){
+		httpx.EscreverJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
 
 	endereco := ":" + cfg.PortaHTTP
