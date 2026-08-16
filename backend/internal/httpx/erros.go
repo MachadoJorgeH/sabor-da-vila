@@ -27,3 +27,7 @@ func NaoEncontrado(mensagem string) ErroAPI {
 func Interno(mensagem string) ErroAPI {
 	return ErroAPI{Status: http.StatusInternalServerError, Codigo: "erro_interno", Mensagem: mensagem}
 }
+
+func Conflito(mensagem string) ErroAPI{
+	return ErroAPI{Status: http.StatusConflict, Codigo: "conflito", Mensagem: mensagem}
+}

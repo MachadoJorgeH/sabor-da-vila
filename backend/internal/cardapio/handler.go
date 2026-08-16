@@ -89,6 +89,8 @@ func (h *Handler) tratarErro(w http.ResponseWriter, err error){
 	switch {
 	case errors.Is(err, ErrNaoEncontrado):
 		httpx.EscreverErro(w, httpx.NaoEncontrado("item não encontrado"))
+	case errors.Is(err, ErrNomeDuplicado):
+		httpx.EscreverErro(w, httpx.Conflito(err.Error()))
 	case errors.Is(err, ErrValidacao):
 		httpx.EscreverErro(w, httpx.RequisicaoInvalida(err.Error()))
 	case errors.As(err, &erroAPI):

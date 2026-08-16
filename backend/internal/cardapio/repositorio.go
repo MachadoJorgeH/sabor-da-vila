@@ -6,10 +6,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrNaoEncontrado = errors.New("item não encontrado")
+var ErrNomeDuplicado = errors.New("já existe um item ativo com esse nome")
+
+const codigoViolacaoUnica = "23505"
 
 type Repositorio struct {
 	db *pgxpool.Pool
@@ -30,6 +34,10 @@ func (r *Repositorio) Criar(ctx context.Context, entrada EntradaItem) (Item, err
 		&item.ID, &item.Nome, &item.PrecoCentavos, &item.Categoria, &item.FotoURL, &item.Ativo, &item.CriadoEm, &item.AtualizadoEm,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == codigoViolacaoUnica{
+			return Item{}, ErrNomeDuplicado
+		}
 		return Item{}, err
 	}
 	return item, nil
@@ -101,6 +109,10 @@ func (r *Repositorio) Atualizar(ctx context.Context, id uuid.UUID, entrada Entra
 		}
 
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == codigoViolacaoUnica{
+				return Item{}, ErrNomeDuplicado
+			}
 			return Item{}, err
 		}
 		return item, nil

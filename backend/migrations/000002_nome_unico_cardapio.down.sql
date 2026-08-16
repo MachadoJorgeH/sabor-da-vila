@@ -1,0 +1,1 @@
+DROP INDEX idx_cardapio_nome_unico;
