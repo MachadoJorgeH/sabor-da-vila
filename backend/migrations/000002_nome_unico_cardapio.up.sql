@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX idx_cardapio_nome_unico ON cardapio_itens (nome) WHERE ativo;
