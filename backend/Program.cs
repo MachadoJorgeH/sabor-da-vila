@@ -2,6 +2,8 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
 var connectionString = builder.Configuration.GetConnectionString("Postgres") ?? throw new InvalidOperationException("Connection string 'Postgres' não configurada.");
 
 var dataSource = NpgsqlDataSource.Create(connectionString);
