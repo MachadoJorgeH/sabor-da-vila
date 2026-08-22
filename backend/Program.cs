@@ -1,6 +1,11 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using Npgsql;
 using SaborDaVila.Api.Menu;
 using SaborDaVila.Api.Common;
+using SaborDaVila.Api.Auth;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,14 +15,47 @@ var dataSource = NpgsqlDataSource.Create(connectionString);
 builder.Services.AddSingleton(dataSource);
 builder.Services.AddScoped<MenuRepository>();
 builder.Services.AddScoped<MenuService>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+            RoleClaimType = "role"
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
+if (args.Length > 0 && args[0] == "create-user")
+{
+    using var scope = app.Services.CreateScope();
+    var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
+    var role = args.Length > 4 ? args[4] : "admin";
+    var newUser = await authService.CreateUserAsync(args[1], args[2], args[3], role);
+    Console.WriteLine($"Usuário criado: {newUser.Id} <{newUser.Email}> role={newUser.Role}");
+    return;
+}
 
 app.UseExceptionHandler();
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapMenuEndpoints();
+app.MapAuthEndpoints();
 
 app.MapGet("/api/health", async (NpgsqlDataSource db) =>
 {

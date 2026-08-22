@@ -6,7 +6,7 @@ public static class MenuEndpoints
 {
     public static void MapMenuEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/menu");
+        var group = app.MapGroup("/api/menu").RequireAuthorization();
 
         group.MapGet("/", async (MenuService service) =>
             Results.Ok(await service.ListAsync()));
