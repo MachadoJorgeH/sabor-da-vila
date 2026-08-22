@@ -1,9 +1,9 @@
+using SaborDaVila.Api.Common;
 namespace SaborDaVila.Api.Menu;
 
-public class ValidationException : Exception
+public class ValidationException : AppException
 {
-    public ValidationException(string message) : base(message)
-    {
-        
-    }
+    public override int StatusCode => 400;
+    public override string Code => "validation_error";
+    public ValidationException(string message) : base(message) { }
 }

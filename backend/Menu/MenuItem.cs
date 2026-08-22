@@ -7,8 +7,8 @@ public record MenuItem(
     string Category,
     string? PhotoUrl,
     bool Active,
-    DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 );
 
 public record MenuItemInput(
