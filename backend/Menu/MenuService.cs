@@ -1,4 +1,5 @@
 namespace SaborDaVila.Api.Menu;
+using SaborDaVila.Api.Common;
 
 public class MenuService
 {

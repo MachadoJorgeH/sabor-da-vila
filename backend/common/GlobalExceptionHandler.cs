@@ -24,6 +24,15 @@ public class GlobalExceptionHandler : IExceptionHandler
             return true;
         }
 
+        if (exception is BadHttpRequestException)
+        {
+            httpContext.Response.StatusCode = 400;
+            await httpContext.Response.WriteAsJsonAsync(
+                new { error = new ApiError("bad_request", "invalid or malformed request body") },
+                cancellationToken);
+            return true;
+        }
+
         _logger.LogError(exception, "unhandled exception");
         httpContext.Response.StatusCode = 500;
         await httpContext.Response.WriteAsJsonAsync(
