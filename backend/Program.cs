@@ -6,6 +6,8 @@ using SaborDaVila.Api.Menu;
 using SaborDaVila.Api.Common;
 using SaborDaVila.Api.Auth;
 using SaborDaVila.Api.Inventory;
+using SaborDaVila.Api.Expenses;
+using SaborDaVila.Api.Audit;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,8 +22,13 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<InventoryRepository>();
 builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<ExpenseRepository>();
+builder.Services.AddScoped<ExpenseService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AuditRepository>();
+builder.Services.AddScoped<AuditService>();
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
 
@@ -60,6 +67,9 @@ app.UseAuthorization();
 app.MapMenuEndpoints();
 app.MapAuthEndpoints();
 app.MapInventoryEndpoints();
+app.MapExpenseEndpoints();
+app.MapExpenseEndpoints();
+app.MapAuditEndpoints();
 
 app.MapGet("/api/health", async (NpgsqlDataSource db) =>
 {
