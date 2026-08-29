@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Plus, X, ArrowRight, Trash2, ClipboardList, Store, Bike, History, StickyNote, ChefHat } from "lucide-react";
 import { usePedidos } from "../hooks/usePedidos";
 import { useCardapio } from "../hooks/useCardapio";
+import { ItemCardapioSelect } from "../components/ItemCardapioSelect";
 import { LABEL_STATUS, LABEL_ORIGEM, totalPedido } from "../types/pedido";
 import type { ItemPedido, Pedido, StatusPedido, OrigemPedido } from "../types/pedido";
 import { formatarHora } from "../utils/formatDate";
@@ -260,18 +261,11 @@ export default function Pedidos() {
             <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
               Item do cardápio
             </label>
-            <select
+            <ItemCardapioSelect
+              itens={cardapio}
               value={cardapioIdSelecionado}
-              onChange={(e) => setCardapioIdSelecionado(e.target.value)}
-              className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-            >
-              <option value="">Selecione…</option>
-              {cardapio.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.nome} — {formatarMoeda(item.preco)}
-                </option>
-              ))}
-            </select>
+              onChange={setCardapioIdSelecionado}
+            />
           </div>
 
           <div className="flex gap-3">
