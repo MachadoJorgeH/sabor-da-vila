@@ -1,9 +1,10 @@
 export const CATEGORIAS_CARDAPIO = [
-  "Lanches",
   "Bebidas",
-  "Sobremesas",
+  "Lanches",
+  "Massas",
   "Pizzas",
   "Prato Feito",
+  "Sobremesas",
 ] as const;
 
 export type CategoriaCardapio = (typeof CATEGORIAS_CARDAPIO)[number];
