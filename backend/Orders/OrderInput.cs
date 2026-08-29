@@ -6,6 +6,7 @@ public record OrderInput(
     string? Note,
     IReadOnlyList<OrderItemInput> Items
 )
+
 {
     public string? Validate()
     {
@@ -24,5 +25,12 @@ public record OrderInput(
 
 public record OrderItemInput(
     Guid MenuItemId,
+    int Quantity
+);
+
+public record OrderItemToCreate(
+    Guid? MenuItemId,
+    string Name,
+    long UnitPriceCents,
     int Quantity
 );
