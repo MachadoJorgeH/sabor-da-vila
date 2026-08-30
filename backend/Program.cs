@@ -9,6 +9,7 @@ using SaborDaVila.Api.Inventory;
 using SaborDaVila.Api.Expenses;
 using SaborDaVila.Api.Audit;
 using SaborDaVila.Api.Orders;
+using SaborDaVila.Api.Finance;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,8 @@ builder.Services.AddScoped<ExpenseRepository>();
 builder.Services.AddScoped<ExpenseService>();
 builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<FinanceRepository>();
+builder.Services.AddScoped<FinanceService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
@@ -51,7 +54,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("Admin", policy => policy.RequireRole("admin"));
 
 var app = builder.Build();
 if (args.Length > 0 && args[0] == "create-user")
@@ -71,9 +75,9 @@ app.MapMenuEndpoints();
 app.MapAuthEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
-app.MapExpenseEndpoints();
 app.MapAuditEndpoints();
 app.MapOrderEndpoints();
+app.MapFinanceEndpoints();
 
 app.MapGet("/api/health", async (NpgsqlDataSource db) =>
 {
