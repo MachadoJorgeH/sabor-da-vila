@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+
 import { ChefHat, Lock } from "lucide-react";
-import { auth } from "../firebase";
+import { useAuth } from "../context/useAuth";
 import logo from "../assets/logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { entrar } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
@@ -18,7 +19,7 @@ export default function Login() {
     setEntrando(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, senha);
+      await entrar(email, senha);
       navigate("/estoque");
     } catch {
       setErro("E-mail ou senha incorretos.");

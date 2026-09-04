@@ -17,8 +17,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import logo from "../assets/logo.png";
-import { auth } from "../firebase";
-import { signOut } from "firebase/auth";
+import { useAuth } from "../context/useAuth";
 
 const navItems = [
   { to: "/cardapio", label: "Cardápio", icon: UtensilsCrossed },
@@ -32,6 +31,7 @@ const navItems = [
 export default function Layout() {
   const { tema, alternar } = useTheme();
   const navigate = useNavigate();
+  const { sair } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
   const [colapsada, setColapsada] = useState(
     () => localStorage.getItem("sidebarColapsada") === "1"
@@ -41,9 +41,9 @@ export default function Layout() {
     localStorage.setItem("sidebarColapsada", colapsada ? "1" : "0");
   }, [colapsada]);
 
-  async function handleSair() {
-    await signOut(auth);
-    navigate("/");
+  function handleSair() {
+  sair();
+  navigate("/");
   }
 
   return (
