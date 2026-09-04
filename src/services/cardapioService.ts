@@ -1,54 +1,47 @@
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  query,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "../firebase";
+import { api } from "../api/client";
 import type { ItemCardapio } from "../types/cardapio";
-import { registrarLog } from "./logsService";
 
-const cardapioRef = collection(db, "cardapio");
+interface MenuItemApi {
+  id: string;
+  name: string;
+  priceCents: number;
+  category: string;
+}
 
-export function ouvirCardapio(callback: (itens: ItemCardapio[]) => void) {
-  const q = query(cardapioRef, orderBy("nome", "asc"));
-  return onSnapshot(q, (snapshot) => {
-    const itens = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as ItemCardapio[];
-    callback(itens);
-  });
+function paraItemCardapio(item: MenuItemApi): ItemCardapio {
+  return {
+    id: item.id,
+    nome: item.name,
+    preco: item.priceCents / 100,
+    categoria: item.category as ItemCardapio["categoria"],
+  };
+}
+
+function paraMenuInput(item: Omit<ItemCardapio, "id">) {
+  return {
+    name: item.nome,
+    priceCents: Math.round(item.preco * 100),
+    category: item.categoria,
+    photoUrl: null,
+  };
+}
+
+export async function listarCardapio(): Promise<ItemCardapio[]> {
+  const dados = await api.get<MenuItemApi[]>("/api/menu");
+  return dados
+    .map(paraItemCardapio)
+    .sort((a, b) => a.nome.localeCompare(b.nome));
 }
 
 export async function adicionarItemCardapio(item: Omit<ItemCardapio, "id">) {
-  await addDoc(cardapioRef, item);
-  await registrarLog({
-    acao: "criar",
-    entidade: "cardapio",
-    descricao: `Adicionou "${item.nome}" ao cardápio`,
-  });
+  await api.post("/api/menu", paraMenuInput(item));
 }
 
 export async function atualizarItemCardapio(id: string, item: Omit<ItemCardapio, "id">) {
-  await updateDoc(doc(db, "cardapio", id), item);
-  await registrarLog({
-    acao: "atualizar",
-    entidade: "cardapio",
-    descricao: `Atualizou "${item.nome}" no cardápio`,
-  });
+  await api.put(`/api/menu/${id}`, paraMenuInput(item));
 }
 
 export async function removerItemCardapio(item: ItemCardapio) {
   if (!item.id) return;
-  await deleteDoc(doc(db, "cardapio", item.id));
-  await registrarLog({
-    acao: "remover",
-    entidade: "cardapio",
-    descricao: `Removeu "${item.nome}" do cardápio`,
-  });
+  await api.delete(`/api/menu/${item.id}`);
 }
