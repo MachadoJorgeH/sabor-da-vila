@@ -23,6 +23,7 @@ builder.Services.AddScoped<MenuRepository>();
 builder.Services.AddScoped<MenuService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<InventoryRepository>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<ExpenseRepository>();
@@ -61,10 +62,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", policy => policy.RequireRole("admin"));
 
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173", "http://127.0.0.1:5173"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
@@ -87,6 +91,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapMenuEndpoints();
 app.MapAuthEndpoints();
+app.MapUsersEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
 app.MapAuditEndpoints();
