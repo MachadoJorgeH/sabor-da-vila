@@ -1,5 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
-
 export type AcaoLog = "criar" | "atualizar" | "remover";
 export type EntidadeLog = "pedido" | "cardapio" | "estoque" | "gasto";
 
@@ -22,5 +20,5 @@ export interface LogAuditoria {
   entidade: EntidadeLog;
   descricao: string;
   usuarioEmail: string;
-  criadoEm: Timestamp;
+  criadoEm: string;
 }

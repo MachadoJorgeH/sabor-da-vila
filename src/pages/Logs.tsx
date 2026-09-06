@@ -4,7 +4,7 @@ import { Search, ScrollText, Plus, Pencil, Trash2 } from "lucide-react";
 import { useLogs } from "../hooks/useLogs";
 import { LABEL_ACAO, LABEL_ENTIDADE } from "../types/log";
 import type { AcaoLog, EntidadeLog } from "../types/log";
-import { formatarDataHora } from "../utils/formatDate";
+import { formatarDataHoraISO } from "../utils/formatDate";
 
 function hojeISO(): string {
   const agora = new Date();
@@ -178,7 +178,7 @@ export default function Logs() {
                     </p>
                   </div>
                   <span className="font-mono text-[10px] text-text-muted shrink-0">
-                    {formatarDataHora(log.criadoEm)}
+                    {formatarDataHoraISO(log.criadoEm)}
                   </span>
                 </div>
                 {idx < logsFiltrados.length - 1 && (

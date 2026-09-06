@@ -6,7 +6,11 @@ public static class AuditEndpoints
     {
         var group = app.MapGroup("/api/logs").RequireAuthorization();
 
-        group.MapGet("/", async (AuditService service) =>
-            Results.Ok(await service.ListAsync(100)));
+        group.MapGet("/", async (AuditService service, DateTime? from, DateTime? to) =>
+        {
+            var toUtc = DateTime.SpecifyKind(to ?? DateTime.UtcNow, DateTimeKind.Utc);
+            var fromUtc = DateTime.SpecifyKind(from ?? toUtc.Date.AddDays(-1), DateTimeKind.Utc);
+            return Results.Ok(await service.ListAsync(fromUtc, toUtc, 500));
+        });
     }
 }

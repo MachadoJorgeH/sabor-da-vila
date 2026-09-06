@@ -25,7 +25,7 @@ public class ExpenseService
             throw new ValidationException(error);
 
         var created = await _repository.CreateAsync(input);
-        await _audit.RecordAsync("create", "expense", $"created expense '{created.Description}'");
+        await _audit.RecordAsync("create", "expense", $"lançou o gasto '{created.Description}'");
         return created;
     }
 
@@ -37,7 +37,7 @@ public class ExpenseService
 
         var updated = await _repository.UpdateAsync(id, input);
         if (updated is not null)
-            await _audit.RecordAsync("update", "expense", $"updated expense '{updated.Description}'");
+            await _audit.RecordAsync("update", "expense", $"atualizou o gasto '{updated.Description}'");
         return updated;
     }
 
@@ -45,7 +45,7 @@ public class ExpenseService
     {
         var deleted = await _repository.DeleteAsync(id);
         if (deleted)
-            await _audit.RecordAsync("delete", "expense", $"deleted expense {id}");
+            await _audit.RecordAsync("delete", "expense", $"removeu um gasto ({id})");
         return deleted;
     }
 }

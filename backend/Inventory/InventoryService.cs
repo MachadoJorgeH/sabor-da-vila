@@ -25,7 +25,7 @@ public class InventoryService
             throw new ValidationException(error);
 
         var created = await _repository.CreateAsync(input);
-        await _audit.RecordAsync("create", "inventory", $"created inventory item '{created.Name}'");
+        await _audit.RecordAsync("create", "inventory", $"repôs '{created.Name}' no estoque");
         return created;
     }
 
@@ -37,7 +37,7 @@ public class InventoryService
 
         var updated = await _repository.UpdateAsync(id, input);
         if (updated is not null)
-            await _audit.RecordAsync("update", "inventory", $"updated inventory item '{updated.Name}'");
+            await _audit.RecordAsync("update", "inventory", $"atualizou '{updated.Name}' no estoque");
         return updated;
     }
 
@@ -45,7 +45,7 @@ public class InventoryService
     {
         var deleted = await _repository.DeleteAsync(id);
         if (deleted)
-            await _audit.RecordAsync("delete", "inventory", $"deleted inventory item {id}");
+            await _audit.RecordAsync("delete", "inventory", $"removeu um item do estoque ({id})");
         return deleted;
     }
 }

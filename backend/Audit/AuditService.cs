@@ -22,5 +22,6 @@ public class AuditService
         return _repository.RecordAsync(action, entity, description, userId, userEmail);
     }
 
-    public Task<IReadOnlyList<AuditLogEntry>> ListAsync(int limit) => _repository.ListAsync(limit);
+    public Task<IReadOnlyList<AuditLogEntry>> ListAsync(DateTime from, DateTime to, int limit) =>
+        _repository.ListAsync(from, to, limit);
 }

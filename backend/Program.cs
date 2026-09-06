@@ -10,6 +10,7 @@ using SaborDaVila.Api.Expenses;
 using SaborDaVila.Api.Audit;
 using SaborDaVila.Api.Orders;
 using SaborDaVila.Api.Finance;
+using SaborDaVila.Api.Sales;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,8 @@ builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<FinanceRepository>();
 builder.Services.AddScoped<FinanceService>();
+builder.Services.AddScoped<SaleRepository>();
+builder.Services.AddScoped<SaleService>();
 builder.Services.AddSignalR();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -89,6 +92,7 @@ app.MapExpenseEndpoints();
 app.MapAuditEndpoints();
 app.MapOrderEndpoints();
 app.MapFinanceEndpoints();
+app.MapSaleEndpoints();
 app.MapHub<OrdersHub>("/hubs/orders");
 
 app.MapGet("/api/health", async (NpgsqlDataSource db) =>
