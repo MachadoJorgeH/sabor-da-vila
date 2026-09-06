@@ -54,14 +54,27 @@ public class FinanceRepository
                     (now() AT TIME ZONE 'America/Sao_Paulo')::date,
                     INTERVAL '1 day'
                 )::date AS day
+            ),
+            sales_by_day AS (
+                SELECT (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS day,
+                       SUM(total_cents)::bigint AS revenue_cents,
+                       COUNT(*)::int AS sales_count
+                FROM sales
+                GROUP BY 1
+            ),
+            expenses_by_day AS (
+                SELECT (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS day,
+                       SUM(amount_cents)::bigint AS expense_cents
+                FROM expenses
+                GROUP BY 1
             )
             SELECT sp.day AS "Day",
-                   COALESCE(SUM(s.total_cents), 0)::bigint AS "RevenueCents",
-                   COUNT(s.id)::int AS "SalesCount"
+                   COALESCE(sd.revenue_cents, 0)::bigint AS "RevenueCents",
+                   COALESCE(sd.sales_count, 0)::int AS "SalesCount",
+                   COALESCE(ed.expense_cents, 0)::bigint AS "ExpenseCents"
             FROM day_spine sp
-            LEFT JOIN sales s
-                ON (s.created_at AT TIME ZONE 'America/Sao_Paulo')::date = sp.day
-            GROUP BY sp.day
+            LEFT JOIN sales_by_day sd ON sd.day = sp.day
+            LEFT JOIN expenses_by_day ed ON ed.day = sp.day
             ORDER BY sp.day
             """;
 

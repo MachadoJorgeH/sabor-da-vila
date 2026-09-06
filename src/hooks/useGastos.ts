@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ouvirGastos,
+  listarGastos,
   adicionarGasto,
   atualizarGasto,
   removerGasto,
@@ -11,15 +11,23 @@ export function useGastos() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = ouvirGastos(setGastos);
-    return () => unsubscribe();
+  const carregar = useCallback(async () => {
+    try {
+      setGastos(await listarGastos());
+    } catch (erro) {
+      console.error("Falha ao carregar os gastos:", erro);
+    }
   }, []);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   async function adicionar(gasto: Omit<Gasto, "id" | "criadoEm">) {
     setSalvando(true);
     try {
       await adicionarGasto(gasto);
+      await carregar();
     } finally {
       setSalvando(false);
     }
@@ -29,15 +37,21 @@ export function useGastos() {
     setSalvando(true);
     try {
       await atualizarGasto(id, gasto);
+      await carregar();
     } finally {
       setSalvando(false);
     }
   }
 
-  function remover(gasto: Gasto) {
+  async function remover(gasto: Gasto) {
     if (!gasto.id) return;
-    const confirmou = window.confirm(`Remover o gasto "${gasto.descricao}"?`);
-    if (confirmou) removerGasto(gasto);
+    setSalvando(true);
+    try {
+      await removerGasto(gasto);
+      await carregar();
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return { gastos, salvando, adicionar, atualizar, remover };

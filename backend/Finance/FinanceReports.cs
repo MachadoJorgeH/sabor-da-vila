@@ -8,7 +8,8 @@ public record ChannelRevenue(
 public record DailyRevenue(
     DateOnly Day,
     long RevenueCents,
-    int SalesCount);
+    int SalesCount,
+    long ExpenseCents);
 
 public record FinanceSummary(
     long RevenueCents,
