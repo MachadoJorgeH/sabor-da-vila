@@ -30,6 +30,7 @@ builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<FinanceRepository>();
 builder.Services.AddScoped<FinanceService>();
+builder.Services.AddSignalR();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
@@ -62,7 +63,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Frontend", policy =>
         policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod()
+              .AllowCredentials());
 });
 
 var app = builder.Build();
@@ -87,6 +89,7 @@ app.MapExpenseEndpoints();
 app.MapAuditEndpoints();
 app.MapOrderEndpoints();
 app.MapFinanceEndpoints();
+app.MapHub<OrdersHub>("/hubs/orders");
 
 app.MapGet("/api/health", async (NpgsqlDataSource db) =>
 {

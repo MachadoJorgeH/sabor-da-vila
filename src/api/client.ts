@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5236";
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5236";
 const TOKEN_KEY = "sabor.token";
 
 export function getToken(): string | null {
@@ -31,7 +31,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (token) headers["Authorization"] = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,

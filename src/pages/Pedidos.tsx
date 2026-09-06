@@ -6,8 +6,9 @@ import { useCardapio } from "../hooks/useCardapio";
 import { ItemCardapioSelect } from "../components/ItemCardapioSelect";
 import { LABEL_STATUS, LABEL_ORIGEM, totalPedido } from "../types/pedido";
 import type { ItemPedido, Pedido, StatusPedido, OrigemPedido } from "../types/pedido";
-import { formatarHora } from "../utils/formatDate";
+import { formatarHoraISO } from "../utils/formatDate";
 import { formatarMoeda } from "../utils/formatCurrency";
+import Modal from "../components/Modal";
 
 const COLUNAS: StatusPedido[] = ["recebido", "em_preparo", "pronto", "entregue"];
 const MAX_ENTREGUES_VISIVEIS = 12;
@@ -22,6 +23,7 @@ export default function Pedidos() {
   const [itens, setItens] = useState<ItemPedido[]>([]);
   const [cardapioIdSelecionado, setCardapioIdSelecionado] = useState("");
   const [itemQtd, setItemQtd] = useState("1");
+  const [pedidoExcluindo, setPedidoExcluindo] = useState<Pedido | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const abaParam = searchParams.get("status");
@@ -65,6 +67,12 @@ export default function Pedidos() {
     setItens([]);
   }
 
+  async function handleConfirmarExclusao() {
+    if (!pedidoExcluindo) return;
+    await remover(pedidoExcluindo);
+    setPedidoExcluindo(null);
+  }
+
   function renderColuna(status: StatusPedido) {
     const pedidosDoStatus = pedidos.filter((p) => p.status === status);
     const exibidos =
@@ -106,7 +114,7 @@ export default function Pedidos() {
                   </span>
                 </div>
                 <button
-                  onClick={() => remover(pedido)}
+                  onClick={() => setPedidoExcluindo(pedido)}
                   aria-label={`Remover pedido de ${pedido.mesa}`}
                   className="p-2.5 -m-2.5 rounded-full text-text-muted hover:text-paprika hover:bg-paprika/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                 >
@@ -135,7 +143,7 @@ export default function Pedidos() {
                 <span className="font-mono text-xs font-semibold text-gold">
                   {formatarMoeda(totalPedido(pedido))}
                 </span>
-                <span className="font-mono text-[10px] text-text-muted">{formatarHora(pedido.criadoEm)}</span>
+                <span className="font-mono text-[10px] text-text-muted">{formatarHoraISO(pedido.criadoEm)}</span>
               </div>
 
               {status !== "entregue" && (
@@ -369,6 +377,34 @@ export default function Pedidos() {
       <div className="hidden md:grid md:grid-cols-4 gap-4">
         {COLUNAS.map((status) => renderColuna(status))}
       </div>
+
+      <Modal
+        aberto={pedidoExcluindo !== null}
+        onFechar={() => setPedidoExcluindo(null)}
+        titulo="Remover pedido"
+      >
+        <p className="text-sm text-text">
+          Remover o pedido da mesa{" "}
+          <span className="font-semibold">{pedidoExcluindo?.mesa}</span>?
+        </p>
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => setPedidoExcluindo(null)}
+            className="px-4 py-2 rounded-md text-sm font-heading text-text-muted hover:text-text hover:bg-surface-alt transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmarExclusao}
+            disabled={salvando}
+            className="px-4 py-2 rounded-md text-sm font-heading font-semibold text-white bg-paprika hover:opacity-90 transition-opacity disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-paprika"
+          >
+            Remover
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

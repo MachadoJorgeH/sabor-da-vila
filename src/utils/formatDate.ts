@@ -9,6 +9,15 @@ export function formatarHora(timestamp?: Timestamp): string {
   });
 }
 
+export function formatarHoraISO(iso?: string): string {
+  if (!iso) return "--:--";
+
+  return new Date(iso).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatarDataHora(timestamp?: Timestamp): string {
   if (!timestamp) return "";
 
