@@ -14,4 +14,5 @@ export interface ItemCardapio {
   nome: string;
   preco: number;
   categoria: CategoriaCardapio;
+  foto?: string;
 }

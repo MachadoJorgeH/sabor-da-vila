@@ -6,6 +6,7 @@ interface MenuItemApi {
   name: string;
   priceCents: number;
   category: string;
+  photoUrl: string | null;
 }
 
 function paraItemCardapio(item: MenuItemApi): ItemCardapio {
@@ -14,6 +15,7 @@ function paraItemCardapio(item: MenuItemApi): ItemCardapio {
     nome: item.name,
     preco: item.priceCents / 100,
     categoria: item.category as ItemCardapio["categoria"],
+    foto: item.photoUrl ?? undefined,
   };
 }
 
@@ -22,7 +24,7 @@ function paraMenuInput(item: Omit<ItemCardapio, "id">) {
     name: item.nome,
     priceCents: Math.round(item.preco * 100),
     category: item.categoria,
-    photoUrl: null,
+    photoUrl: item.foto ?? null,
   };
 }
 
