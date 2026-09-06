@@ -1,5 +1,12 @@
 import { useSearchParams } from "react-router-dom";
-import { LayoutDashboard, Receipt, Store, Bike } from "lucide-react";
+import {
+  LayoutDashboard,
+  Receipt,
+  Store,
+  Bike,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -63,7 +70,23 @@ export default function Financeiro() {
     setSearchParams(novaAba === "geral" ? {} : { aba: novaAba });
   }
 
-  const { resumo, chartData, porCanalMes } = useFinanceiro();
+  const {
+    mesSelecionado,
+    irParaMesAnterior,
+    irParaProximoMes,
+    podeAvancar,
+    ehMesAtual,
+    resumoHoje,
+    resumoSemana,
+    resumoMes,
+    chartData,
+    porCanalMes,
+  } = useFinanceiro();
+
+  const labelMes = mesSelecionado.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-5 md:space-y-8">
@@ -103,16 +126,38 @@ export default function Financeiro() {
 
       {aba === "geral" && (
         <div className="space-y-5 md:space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <CardResumo titulo="Hoje" vendas={resumo.vendasHoje} gastos={resumo.gastosHoje} />
-            <CardResumo titulo="Últimos 7 dias" vendas={resumo.vendasSemana} gastos={resumo.gastosSemana} />
-            <CardResumo titulo="Este mês" vendas={resumo.vendasMes} gastos={resumo.gastosMes} />
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={irParaMesAnterior}
+              aria-label="Mês anterior"
+              className="p-2 rounded-full text-text-muted hover:text-gold hover:bg-gold/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <span className="font-heading font-semibold text-text capitalize min-w-44 text-center">
+              {labelMes}
+            </span>
+            <button
+              onClick={irParaProximoMes}
+              disabled={!podeAvancar}
+              aria-label="Próximo mês"
+              className="p-2 rounded-full text-text-muted hover:text-gold hover:bg-gold/10 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
 
+          {ehMesAtual ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <CardResumo titulo="Hoje" vendas={resumoHoje.vendas} gastos={resumoHoje.gastos} />
+              <CardResumo titulo="Últimos 7 dias" vendas={resumoSemana.vendas} gastos={resumoSemana.gastos} />
+              <CardResumo titulo={labelMes} vendas={resumoMes.vendas} gastos={resumoMes.gastos} />
+            </div>
+          ) : (
+            <CardResumo titulo={labelMes} vendas={resumoMes.vendas} gastos={resumoMes.gastos} />
+          )}
+
           <div className="bg-surface border border-border border-t-2 border-t-gold rounded-sm p-4 md:p-6">
-            <span className="font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted">
-              Este mês
-            </span>
             <h3 className="font-heading font-semibold text-text mb-4 text-sm md:text-base">
               Vendas por canal
             </h3>
@@ -147,11 +192,8 @@ export default function Financeiro() {
           </div>
 
           <div className="bg-card-soft rounded-lg shadow-sm p-4 md:p-6">
-            <span className="font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted">
-              Últimos 7 dias
-            </span>
             <h3 className="font-heading font-semibold text-text mb-4 text-sm md:text-base">
-              Vendas x Gastos
+              Vendas x Gastos por dia
             </h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={chartData} margin={{ left: -20 }}>

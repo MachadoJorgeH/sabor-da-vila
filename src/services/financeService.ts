@@ -25,8 +25,19 @@ const ORIGEM_DA_API: Record<string, OrigemPedido> = {
   app: "app",
 };
 
-export async function buscarSerieDiaria(dias: number): Promise<DiaFinanceiro[]> {
-  const dados = await api.get<DailyApi[]>(`/api/finance/daily?days=${dias}`);
+function paraDataISO(data: Date): string {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+export async function buscarSerieDiaria(inicio: Date, fim: Date): Promise<DiaFinanceiro[]> {
+  const params = new URLSearchParams({
+    from: paraDataISO(inicio),
+    to: paraDataISO(fim),
+  });
+  const dados = await api.get<DailyApi[]>(`/api/finance/daily?${params}`);
   return dados.map((d) => ({
     dia: d.day,
     vendas: d.revenueCents / 100,

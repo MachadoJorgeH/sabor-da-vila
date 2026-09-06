@@ -30,12 +30,14 @@ public class FinanceService
         return _repository.ByChannelAsync(from, to);
     }
 
-    public Task<IReadOnlyList<DailyRevenue>> GetDailyAsync(int days)
+    public Task<IReadOnlyList<DailyRevenue>> GetDailyAsync(DateOnly from, DateOnly to)
     {
-        if (days < 1 || days > MaxDays)
-            throw new ValidationException($"days must be between 1 and {MaxDays}");
+        if (from > to)
+            throw new ValidationException("'from' must be on or before 'to'");
+        if (to.DayNumber - from.DayNumber > MaxDays)
+            throw new ValidationException($"range cannot exceed {MaxDays} days");
 
-        return _repository.DailyAsync(days);
+        return _repository.DailyAsync(from, to);
     }
 
     private static void EnsureRange(DateTime from, DateTime to)

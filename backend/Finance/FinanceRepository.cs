@@ -45,15 +45,11 @@ public class FinanceRepository
         return await conn.QuerySingleAsync<SummaryTotals>(sql, new { From = from, To = to });
     }
 
-    public async Task<IReadOnlyList<DailyRevenue>> DailyAsync(int days)
+    public async Task<IReadOnlyList<DailyRevenue>> DailyAsync(DateOnly from, DateOnly to)
     {
         const string sql = """
             WITH day_spine AS (
-                SELECT generate_series(
-                    (now() AT TIME ZONE 'America/Sao_Paulo')::date - (@Days - 1) * INTERVAL '1 day',
-                    (now() AT TIME ZONE 'America/Sao_Paulo')::date,
-                    INTERVAL '1 day'
-                )::date AS day
+                SELECT generate_series(@From::timestamp, @To::timestamp, INTERVAL '1 day')::date AS day
             ),
             sales_by_day AS (
                 SELECT (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS day,
@@ -79,7 +75,11 @@ public class FinanceRepository
             """;
 
         await using var conn = await _dataSource.OpenConnectionAsync();
-        var rows = await conn.QueryAsync<DailyRevenue>(sql, new { Days = days });
+        var rows = await conn.QueryAsync<DailyRevenue>(sql, new
+        {
+            From = from.ToDateTime(TimeOnly.MinValue),
+            To = to.ToDateTime(TimeOnly.MinValue),
+        });
         return rows.ToList();
     }
 }
