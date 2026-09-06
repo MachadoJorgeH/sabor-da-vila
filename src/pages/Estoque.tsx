@@ -2,6 +2,15 @@ import { useState } from "react";
 import { Plus, Trash2, Package, Boxes } from "lucide-react";
 import { useEstoque } from "../hooks/useEstoque";
 import { formatarMoeda } from "../utils/formatCurrency";
+import type { ItemEstoque } from "../types/estoque";
+import Modal from "../components/Modal";
+
+function normalizar(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
 
 export default function Estoque() {
   const { itens, salvando, adicionar, remover } = useEstoque();
@@ -10,6 +19,8 @@ export default function Estoque() {
   const [quantidade, setQuantidade] = useState("");
   const [unidade, setUnidade] = useState("un");
   const [custo, setCusto] = useState("");
+  const [itemExcluindo, setItemExcluindo] = useState<ItemEstoque | null>(null);
+  const [busca, setBusca] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +39,18 @@ export default function Estoque() {
     setUnidade("un");
   }
 
+  async function handleConfirmarExclusao() {
+    if (!itemExcluindo) return;
+    await remover(itemExcluindo);
+    setItemExcluindo(null);
+  }
+
   const totalInvestido = itens.reduce((soma, item) => soma + item.custo, 0);
+
+  const termoBusca = normalizar(busca);
+  const itensFiltrados = termoBusca
+    ? itens.filter((item) => normalizar(item.nome).includes(termoBusca))
+    : itens;
 
   return (
     <div className="space-y-5 md:space-y-8">
@@ -145,41 +167,79 @@ export default function Estoque() {
           </span>
         </div>
 
+        <div className="px-4 md:px-6 pb-4">
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar item…"
+            className="w-full border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
+          />
+        </div>
+
         <div className="border-t border-dashed border-gold/25" />
 
         <ul>
-          {itens.map((item, idx) => (
+          {itensFiltrados.map((item, idx) => (
             <li key={item.id} className="group relative">
               <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-gold scale-y-0 group-hover:scale-y-100 transition-transform duration-200 ease-out" />
               <div className="flex items-center gap-3 px-4 md:px-6 py-4">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-text truncate">{item.nome}</p>
                   <p className="font-mono text-xs text-text-muted mt-0.5">
-                    {item.quantidade} {item.unidade} · {formatarMoeda(item.custo)}
+                    {item.quantidade} {item.unidade} ·{" "}
+                    {formatarMoeda(item.custo)}
                   </p>
                 </div>
                 <button
-                  onClick={() => remover(item)}
+                  onClick={() => setItemExcluindo(item)}
                   aria-label={`Remover ${item.nome}`}
                   className="shrink-0 p-3 -m-3 rounded-full text-text-muted hover:text-paprika hover:bg-paprika/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                 >
                   <Trash2 size={17} />
                 </button>
               </div>
-              {idx < itens.length - 1 && (
+              {idx < itensFiltrados.length - 1 && (
                 <div className="border-t border-dashed border-gold/25 mx-4 md:mx-6" />
               )}
             </li>
           ))}
 
-          {itens.length === 0 && (
+          {itensFiltrados.length === 0 && (
             <li className="px-6 py-12 text-center text-text-muted">
               <Package size={24} className="mx-auto mb-2" />
-              Nenhum item no estoque ainda
+              {busca ? "Nenhum item encontrado" : "Nenhum item no estoque ainda"}
             </li>
           )}
         </ul>
       </div>
+      <Modal
+        aberto={itemExcluindo !== null}
+        onFechar={() => setItemExcluindo(null)}
+        titulo="Remover item"
+      >
+        <p className="text-sm text-text">
+          Remover <span className="font-semibold">{itemExcluindo?.nome}</span>{" "}
+          do estoque?
+        </p>
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => setItemExcluindo(null)}
+            className="px-4 py-2 rounded-md text-sm font-heading text-text-muted hover:text-text hover:bg-surface-alt transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmarExclusao}
+            disabled={salvando}
+            className="px-4 py-2 rounded-md text-sm font-heading font-semibold text-white bg-paprika hover:opacity-90 transition-opacity disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-paprika"
+          >
+            Remover
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

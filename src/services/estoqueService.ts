@@ -1,53 +1,46 @@
-import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  query,
-  orderBy,
-  serverTimestamp,
-  Timestamp,
-} from "firebase/firestore";
+import { api } from "../api/client";
 import type { ItemEstoque } from "../types/estoque";
-import { registrarLog } from "./logsService";
 
-const estoqueRef = collection(db, "estoque");
-
-export function ouvirEstoque(callback: (itens: ItemEstoque[]) => void) {
-  const q = query(estoqueRef, orderBy("criadoEm", "desc"));
-
-  return onSnapshot(q, (snapshot) => {
-    const itens = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as ItemEstoque[];
-
-    callback(itens);
-  });
+interface InventoryItemApi {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  costCents: number;
+  createdAt: string;
 }
 
-export async function adicionarItem(item: Omit<ItemEstoque, "id" | "criadoEm">) {
-  await addDoc(estoqueRef, {
-    ...item,
-    criadoEm: serverTimestamp(),
-  });
-  await registrarLog({
-    acao: "criar",
-    entidade: "estoque",
-    descricao: `Repôs "${item.nome}" no estoque (${item.quantidade} ${item.unidade})`,
-  });
+function paraItemEstoque(item: InventoryItemApi): ItemEstoque {
+  return {
+    id: item.id,
+    nome: item.name,
+    quantidade: item.quantity,
+    unidade: item.unit,
+    custo: item.costCents / 100,
+  };
+}
+
+function paraInventoryInput(item: Omit<ItemEstoque, "id">) {
+  return {
+    name: item.nome,
+    quantity: item.quantidade,
+    unit: item.unidade,
+    costCents: Math.round(item.custo * 100),
+  };
+}
+
+export async function listarEstoque(): Promise<ItemEstoque[]> {
+  const dados = await api.get<InventoryItemApi[]>("/api/inventory");
+  return dados
+    .map(paraItemEstoque)
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+}
+
+export async function adicionarItem(item: Omit<ItemEstoque, "id">) {
+  await api.post("/api/inventory", paraInventoryInput(item));
 }
 
 export async function removerItem(item: ItemEstoque) {
   if (!item.id) return;
-  await deleteDoc(doc(db, "estoque", item.id));
-  await registrarLog({
-    acao: "remover",
-    entidade: "estoque",
-    descricao: `Removeu "${item.nome}" do estoque`,
-  });
+  await api.delete(`/api/inventory/${item.id}`);
 }
-
-export type { Timestamp };

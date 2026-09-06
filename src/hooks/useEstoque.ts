@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ouvirEstoque,
+  listarEstoque,
   adicionarItem,
   removerItem,
 } from "../services/estoqueService";
@@ -10,24 +10,37 @@ export function useEstoque() {
   const [itens, setItens] = useState<ItemEstoque[]>([]);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = ouvirEstoque(setItens);
-    return () => unsubscribe();
+  const carregar = useCallback(async () => {
+    try {
+      setItens(await listarEstoque());
+    } catch (erro) {
+      console.error("Falha ao carregar o estoque:", erro);
+    }
   }, []);
 
-  async function adicionar(item: Omit<ItemEstoque, "id" | "criadoEm">) {
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  async function adicionar(item: Omit<ItemEstoque, "id">) {
     setSalvando(true);
     try {
       await adicionarItem(item);
+      await carregar();
     } finally {
       setSalvando(false);
     }
   }
 
-  function remover(item: ItemEstoque) {
+  async function remover(item: ItemEstoque) {
     if (!item.id) return;
-    const confirmou = window.confirm(`Remover "${item.nome}" do estoque?`);
-    if (confirmou) removerItem(item);
+    setSalvando(true);
+    try {
+      await removerItem(item);
+      await carregar();
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return { itens, salvando, adicionar, remover };
