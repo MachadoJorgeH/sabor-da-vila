@@ -40,5 +40,21 @@ public static class MenuEndpoints
                 throw new NotFoundException("menu item not found");
             return Results.NoContent();
         });
+
+        group.MapPost("/{id:guid}/photo", async (Guid id, IFormFile file, MenuService service) =>
+        {
+            var updated = await service.SetPhotoAsync(id, file);
+            if (updated is null)
+                throw new NotFoundException("menu item not found");
+            return Results.Ok(updated);
+        }).DisableAntiforgery();
+
+        group.MapDelete("/{id:guid}/photo", async (Guid id, MenuService service) =>
+        {
+            var updated = await service.RemovePhotoAsync(id);
+            if (updated is null)
+                throw new NotFoundException("menu item not found");
+            return Results.Ok(updated);
+        });
     }
 }

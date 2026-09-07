@@ -43,8 +43,8 @@ public class MenuRepository
     public async Task<MenuItem> CreateAsync(MenuItemInput input)
     {
         const string sql = """
-            INSERT INTO menu_items (name, price_cents, category, photo_url)
-            VALUES (@Name, @PriceCents, @Category, @PhotoUrl)
+            INSERT INTO menu_items (name, price_cents, category)
+            VALUES (@Name, @PriceCents, @Category)
             RETURNING id AS "Id", name AS "Name", price_cents AS "PriceCents", category AS "Category",
                       photo_url AS "PhotoUrl", active AS "Active", created_at AS "CreatedAt", updated_at AS "UpdatedAt"
             """;
@@ -63,8 +63,7 @@ public class MenuRepository
     {
         const string sql = """
             UPDATE menu_items
-            SET name = @Name, price_cents = @PriceCents, category = @Category,
-                photo_url = @PhotoUrl, updated_at = now()
+            SET name = @Name, price_cents = @PriceCents, category = @Category, updated_at = now()
             WHERE id = @Id
             RETURNING id AS "Id", name AS "Name", price_cents AS "PriceCents", category AS "Category",
                       photo_url AS "PhotoUrl", active AS "Active", created_at AS "CreatedAt", updated_at AS "UpdatedAt"
@@ -78,14 +77,27 @@ public class MenuRepository
                 Id = id,
                 input.Name,
                 input.PriceCents,
-                input.Category,
-                input.PhotoUrl
+                input.Category
             });
         }
         catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
         {
             throw new DuplicateMenuItemNameException();
         }
+    }
+
+    public async Task<MenuItem?> UpdatePhotoAsync(Guid id, string? photoUrl)
+    {
+        const string sql = """
+            UPDATE menu_items
+            SET photo_url = @PhotoUrl, updated_at = now()
+            WHERE id = @Id
+            RETURNING id AS "Id", name AS "Name", price_cents AS "PriceCents", category AS "Category",
+                      photo_url AS "PhotoUrl", active AS "Active", created_at AS "CreatedAt", updated_at AS "UpdatedAt"
+            """;
+
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        return await conn.QuerySingleOrDefaultAsync<MenuItem>(sql, new { Id = id, PhotoUrl = photoUrl });
     }
 
     public async Task<bool> DeactivateAsync(Guid id)

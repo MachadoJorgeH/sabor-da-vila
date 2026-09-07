@@ -16,3 +16,8 @@ export interface ItemCardapio {
   categoria: CategoriaCardapio;
   foto?: string;
 }
+
+export type FotoAcao =
+  | { tipo: "manter" }
+  | { tipo: "nova"; arquivo: File }
+  | { tipo: "remover" };

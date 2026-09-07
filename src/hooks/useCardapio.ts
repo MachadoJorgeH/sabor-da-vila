@@ -4,8 +4,10 @@ import {
   adicionarItemCardapio,
   atualizarItemCardapio,
   removerItemCardapio,
+  enviarFotoItem,
+  removerFotoItem,
 } from "../services/cardapioService";
-import type { ItemCardapio } from "../types/cardapio";
+import type { ItemCardapio, FotoAcao } from "../types/cardapio";
 
 export function useCardapio() {
   const [itens, setItens] = useState<ItemCardapio[]>([]);
@@ -23,27 +25,35 @@ export function useCardapio() {
     carregar();
   }, [carregar]);
 
-  async function adicionar(item: Omit<ItemCardapio, "id">) {
+  async function adicionar(item: Omit<ItemCardapio, "id">, foto: FotoAcao) {
     setSalvando(true);
     try {
-      await adicionarItemCardapio(item);
+      const criado = await adicionarItemCardapio(item);
+      if (foto.tipo === "nova" && criado.id) {
+        await enviarFotoItem(criado.id, foto.arquivo);
+      }
       await carregar();
     } finally {
       setSalvando(false);
     }
   }
 
-  async function atualizar(id: string, item: Omit<ItemCardapio, "id">) {
+  async function atualizar(id: string, item: Omit<ItemCardapio, "id">, foto: FotoAcao) {
     setSalvando(true);
     try {
       await atualizarItemCardapio(id, item);
+      if (foto.tipo === "nova") {
+        await enviarFotoItem(id, foto.arquivo);
+      } else if (foto.tipo === "remover") {
+        await removerFotoItem(id);
+      }
       await carregar();
     } finally {
       setSalvando(false);
     }
   }
 
-    async function remover(item: ItemCardapio) {
+  async function remover(item: ItemCardapio) {
     if (!item.id) return;
     setSalvando(true);
     try {

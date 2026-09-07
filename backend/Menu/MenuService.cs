@@ -1,5 +1,6 @@
 using SaborDaVila.Api.Audit;
 using SaborDaVila.Api.Common;
+using SaborDaVila.Api.Storage;
 
 namespace SaborDaVila.Api.Menu;
 
@@ -7,11 +8,13 @@ public class MenuService
 {
     private readonly MenuRepository _repository;
     private readonly AuditService _audit;
+    private readonly PhotoStorage _photos;
 
-    public MenuService(MenuRepository repository, AuditService audit)
+    public MenuService(MenuRepository repository, AuditService audit, PhotoStorage photos)
     {
         _repository = repository;
         _audit = audit;
+        _photos = photos;
     }
 
     public Task<IReadOnlyList<MenuItem>> ListAsync() => _repository.ListAsync();
@@ -47,5 +50,36 @@ public class MenuService
         if (removed)
             await _audit.RecordAsync("delete", "menu", $"removeu um item do cardápio ({id})");
         return removed;
+    }
+
+    public async Task<MenuItem?> SetPhotoAsync(Guid id, IFormFile file)
+    {
+        var error = _photos.Validate(file);
+        if (error is not null)
+            throw new ValidationException(error);
+
+        var item = await _repository.GetByIdAsync(id);
+        if (item is null)
+            return null;
+
+        var url = await _photos.SaveAsync(file);
+        var updated = await _repository.UpdatePhotoAsync(id, url);
+        _photos.Delete(item.PhotoUrl);
+        await _audit.RecordAsync("update", "menu", $"trocou a foto de '{item.Name}'");
+        return updated;
+    }
+
+    public async Task<MenuItem?> RemovePhotoAsync(Guid id)
+    {
+        var item = await _repository.GetByIdAsync(id);
+        if (item is null)
+            return null;
+        if (item.PhotoUrl is null)
+            return item;
+
+        var updated = await _repository.UpdatePhotoAsync(id, null);
+        _photos.Delete(item.PhotoUrl);
+        await _audit.RecordAsync("update", "menu", $"removeu a foto de '{item.Name}'");
+        return updated;
     }
 }

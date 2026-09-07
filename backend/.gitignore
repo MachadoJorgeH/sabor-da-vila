@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Locally uploaded menu photos (dev only)
+uploads/
+
 # User-specific files
 *.rsuser
 *.suo
