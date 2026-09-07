@@ -14,8 +14,7 @@ public record MenuItem(
 public record MenuItemInput(
     string Name,
     long PriceCents,
-    string Category,
-    string? PhotoUrl
+    string Category
 )
 {
     private static readonly HashSet<string> ValidCategories = new() { "Lanches", "Bebidas", "Sobremesas", "Pizzas", "Prato Feito", "Massas"};

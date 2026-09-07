@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Npgsql;
@@ -11,6 +12,7 @@ using SaborDaVila.Api.Audit;
 using SaborDaVila.Api.Orders;
 using SaborDaVila.Api.Finance;
 using SaborDaVila.Api.Sales;
+using SaborDaVila.Api.Storage;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +36,7 @@ builder.Services.AddScoped<FinanceRepository>();
 builder.Services.AddScoped<FinanceService>();
 builder.Services.AddScoped<SaleRepository>();
 builder.Services.AddScoped<SaleService>();
+builder.Services.AddSingleton<PhotoStorage>();
 builder.Services.AddSignalR();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -87,6 +90,14 @@ if (args.Length > 0 && args[0] == "create-user")
 
 app.UseExceptionHandler();
 app.UseCors("Frontend");
+
+var photoStorage = app.Services.GetRequiredService<PhotoStorage>();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(photoStorage.Root),
+    RequestPath = PhotoStorage.RequestPath
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapMenuEndpoints();

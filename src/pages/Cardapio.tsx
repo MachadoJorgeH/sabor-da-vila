@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, UtensilsCrossed } from "lucide-react";
 import { useCardapio } from "../hooks/useCardapio";
-import type { ItemCardapio } from "../types/cardapio";
+import type { ItemCardapio, FotoAcao } from "../types/cardapio";
 import { formatarMoeda } from "../utils/formatCurrency";
 import Modal from "../components/Modal";
 import ItemCardapioForm from "../components/ItemCardapioForm";
@@ -11,9 +11,9 @@ export default function Cardapio() {
   const [itemEditando, setItemEditando] = useState<ItemCardapio | null>(null);
   const [itemExcluindo, setItemExcluindo] = useState<ItemCardapio | null>(null);
 
-  async function handleSalvarEdicao(dados: Omit<ItemCardapio, "id">) {
+  async function handleSalvarEdicao(dados: Omit<ItemCardapio, "id">, foto: FotoAcao) {
     if (!itemEditando?.id) return;
-    await atualizar(itemEditando.id, dados);
+    await atualizar(itemEditando.id, dados, foto);
     setItemEditando(null);
   }
 
@@ -76,6 +76,13 @@ export default function Cardapio() {
             <li key={item.id} className="group relative">
               <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-gold scale-y-0 group-hover:scale-y-100 transition-transform duration-200 ease-out" />
               <div className="flex items-center gap-3 px-4 md:px-6 py-4">
+                <div className="w-11 h-11 rounded-md border border-border bg-surface-alt overflow-hidden flex items-center justify-center shrink-0">
+                  {item.foto ? (
+                    <img src={item.foto} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <UtensilsCrossed size={16} className="text-text-muted" />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-text truncate">{item.nome}</p>
                   <span className="inline-block mt-1 font-mono text-[10px] tracking-widest uppercase text-text-muted bg-surface-alt rounded px-1.5 py-0.5">
