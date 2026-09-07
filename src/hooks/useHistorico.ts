@@ -1,27 +1,28 @@
-import { useEffect, useState } from "react";
-import { ouvirVendas } from "../services/vendasService";
+import { useCallback, useEffect, useState } from "react";
+import { listarVendas } from "../services/vendasService";
 import type { Venda } from "../types/venda";
 
-/** `data` no formato "AAAA-MM-DD". Busca só o dia selecionado no Firestore,
- * em vez de trazer o histórico inteiro de vendas e filtrar no cliente. */
 export function useHistorico(data: string) {
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [carregando, setCarregando] = useState(true);
 
-  useEffect(() => {
+  const carregar = useCallback(async () => {
     const [ano, mes, dia] = data.split("-").map(Number);
     const inicio = new Date(ano, mes - 1, dia);
     const fim = new Date(ano, mes - 1, dia + 1);
-
-    const unsubscribe = ouvirVendas(
-      (dados) => {
-        setVendas(dados);
-        setCarregando(false);
-      },
-      { inicio, fim }
-    );
-    return () => unsubscribe();
+    setCarregando(true);
+    try {
+      setVendas(await listarVendas(inicio, fim));
+    } catch (erro) {
+      console.error("Falha ao carregar o histórico:", erro);
+    } finally {
+      setCarregando(false);
+    }
   }, [data]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   return { vendas, carregando };
 }

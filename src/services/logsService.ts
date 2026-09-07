@@ -1,54 +1,45 @@
-import { auth, db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  limit,
-  serverTimestamp,
-  Timestamp,
-} from "firebase/firestore";
-import type { QueryConstraint } from "firebase/firestore";
+import { api } from "../api/client";
 import type { AcaoLog, EntidadeLog, LogAuditoria } from "../types/log";
 
-const logsRef = collection(db, "logs");
-
-export async function registrarLog(entrada: {
-  acao: AcaoLog;
-  entidade: EntidadeLog;
-  descricao: string;
-}) {
-  await addDoc(logsRef, {
-    ...entrada,
-    usuarioEmail: auth.currentUser?.email ?? "desconhecido",
-    criadoEm: serverTimestamp(),
-  });
+interface AuditLogApi {
+  id: number;
+  action: string;
+  entity: string;
+  description: string;
+  userId: string | null;
+  userEmail: string;
+  createdAt: string;
 }
 
-export function ouvirLogs(
-  callback: (logs: LogAuditoria[]) => void,
-  opcoes?: { inicio?: Date; fim?: Date; max?: number }
-) {
-  const restricoes: QueryConstraint[] = [orderBy("criadoEm", "desc")];
+const ACAO_DA_API: Record<string, AcaoLog> = {
+  create: "criar",
+  update: "atualizar",
+  delete: "remover",
+};
 
-  if (opcoes?.inicio) {
-    restricoes.push(where("criadoEm", ">=", Timestamp.fromDate(opcoes.inicio)));
-  }
-  if (opcoes?.fim) {
-    restricoes.push(where("criadoEm", "<", Timestamp.fromDate(opcoes.fim)));
-  }
-  restricoes.push(limit(opcoes?.max ?? 300));
+const ENTIDADE_DA_API: Record<string, EntidadeLog> = {
+  menu: "cardapio",
+  inventory: "estoque",
+  expense: "gasto",
+  order: "pedido",
+};
 
-  const q = query(logsRef, ...restricoes);
+function paraLog(entry: AuditLogApi): LogAuditoria {
+  return {
+    id: String(entry.id),
+    acao: ACAO_DA_API[entry.action] ?? "atualizar",
+    entidade: ENTIDADE_DA_API[entry.entity] ?? "cardapio",
+    descricao: entry.description,
+    usuarioEmail: entry.userEmail,
+    criadoEm: entry.createdAt,
+  };
+}
 
-  return onSnapshot(q, (snapshot) => {
-    const logs = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as LogAuditoria[];
-
-    callback(logs);
+export async function listarLogs(inicio: Date, fim: Date): Promise<LogAuditoria[]> {
+  const params = new URLSearchParams({
+    from: inicio.toISOString(),
+    to: fim.toISOString(),
   });
+  const dados = await api.get<AuditLogApi[]>(`/api/logs?${params}`);
+  return dados.map(paraLog);
 }

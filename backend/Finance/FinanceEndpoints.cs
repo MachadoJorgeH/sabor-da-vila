@@ -18,8 +18,8 @@ public static class FinanceEndpoints
             return Results.Ok(await service.GetByChannelAsync(f, t));
         });
 
-        group.MapGet("/daily", async (FinanceService service, int? days) =>
-            Results.Ok(await service.GetDailyAsync(days ?? 30)));
+        group.MapGet("/daily", async (FinanceService service, DateOnly from, DateOnly to) =>
+            Results.Ok(await service.GetDailyAsync(from, to)));
     }
 
     private static (DateTime From, DateTime To) DefaultRange(DateTime? from, DateTime? to)

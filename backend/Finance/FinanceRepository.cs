@@ -45,28 +45,41 @@ public class FinanceRepository
         return await conn.QuerySingleAsync<SummaryTotals>(sql, new { From = from, To = to });
     }
 
-    public async Task<IReadOnlyList<DailyRevenue>> DailyAsync(int days)
+    public async Task<IReadOnlyList<DailyRevenue>> DailyAsync(DateOnly from, DateOnly to)
     {
         const string sql = """
             WITH day_spine AS (
-                SELECT generate_series(
-                    (now() AT TIME ZONE 'America/Sao_Paulo')::date - (@Days - 1) * INTERVAL '1 day',
-                    (now() AT TIME ZONE 'America/Sao_Paulo')::date,
-                    INTERVAL '1 day'
-                )::date AS day
+                SELECT generate_series(@From::timestamp, @To::timestamp, INTERVAL '1 day')::date AS day
+            ),
+            sales_by_day AS (
+                SELECT (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS day,
+                       SUM(total_cents)::bigint AS revenue_cents,
+                       COUNT(*)::int AS sales_count
+                FROM sales
+                GROUP BY 1
+            ),
+            expenses_by_day AS (
+                SELECT (created_at AT TIME ZONE 'America/Sao_Paulo')::date AS day,
+                       SUM(amount_cents)::bigint AS expense_cents
+                FROM expenses
+                GROUP BY 1
             )
             SELECT sp.day AS "Day",
-                   COALESCE(SUM(s.total_cents), 0)::bigint AS "RevenueCents",
-                   COUNT(s.id)::int AS "SalesCount"
+                   COALESCE(sd.revenue_cents, 0)::bigint AS "RevenueCents",
+                   COALESCE(sd.sales_count, 0)::int AS "SalesCount",
+                   COALESCE(ed.expense_cents, 0)::bigint AS "ExpenseCents"
             FROM day_spine sp
-            LEFT JOIN sales s
-                ON (s.created_at AT TIME ZONE 'America/Sao_Paulo')::date = sp.day
-            GROUP BY sp.day
+            LEFT JOIN sales_by_day sd ON sd.day = sp.day
+            LEFT JOIN expenses_by_day ed ON ed.day = sp.day
             ORDER BY sp.day
             """;
 
         await using var conn = await _dataSource.OpenConnectionAsync();
-        var rows = await conn.QueryAsync<DailyRevenue>(sql, new { Days = days });
+        var rows = await conn.QueryAsync<DailyRevenue>(sql, new
+        {
+            From = from.ToDateTime(TimeOnly.MinValue),
+            To = to.ToDateTime(TimeOnly.MinValue),
+        });
         return rows.ToList();
     }
 }

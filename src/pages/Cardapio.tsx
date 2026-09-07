@@ -1,45 +1,26 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, UtensilsCrossed, X } from "lucide-react";
+import { Plus, Pencil, Trash2, UtensilsCrossed } from "lucide-react";
 import { useCardapio } from "../hooks/useCardapio";
-import { CATEGORIAS_CARDAPIO } from "../types/cardapio";
-import type { ItemCardapio, CategoriaCardapio } from "../types/cardapio";
+import type { ItemCardapio } from "../types/cardapio";
 import { formatarMoeda } from "../utils/formatCurrency";
+import Modal from "../components/Modal";
+import ItemCardapioForm from "../components/ItemCardapioForm";
 
 export default function Cardapio() {
   const { itens, salvando, adicionar, atualizar, remover } = useCardapio();
+  const [itemEditando, setItemEditando] = useState<ItemCardapio | null>(null);
+  const [itemExcluindo, setItemExcluindo] = useState<ItemCardapio | null>(null);
 
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState("");
-  const [categoria, setCategoria] = useState<CategoriaCardapio>(CATEGORIAS_CARDAPIO[0]);
-
-  function iniciarEdicao(item: ItemCardapio) {
-    setEditandoId(item.id ?? null);
-    setNome(item.nome);
-    setPreco(String(item.preco));
-    setCategoria(item.categoria);
+  async function handleSalvarEdicao(dados: Omit<ItemCardapio, "id">) {
+    if (!itemEditando?.id) return;
+    await atualizar(itemEditando.id, dados);
+    setItemEditando(null);
   }
 
-  function cancelarEdicao() {
-    setEditandoId(null);
-    setNome("");
-    setPreco("");
-    setCategoria(CATEGORIAS_CARDAPIO[0]);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!nome || !preco) return;
-
-    const dados = { nome, preco: Number(preco), categoria };
-
-    if (editandoId) {
-      await atualizar(editandoId, dados);
-    } else {
-      await adicionar(dados);
-    }
-
-    cancelarEdicao();
+  async function handleConfirmarExclusao() {
+    if (!itemExcluindo) return;
+    await remover(itemExcluindo);
+    setItemExcluindo(null);
   }
 
   const precoMedio = itens.length
@@ -67,92 +48,18 @@ export default function Cardapio() {
         </div>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-card-soft rounded-lg shadow-sm p-4 md:p-6 space-y-4"
-      >
+      <div className="bg-card-soft rounded-lg shadow-sm p-4 md:p-6 space-y-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gold-gradient flex items-center justify-center shrink-0">
-            {editandoId ? (
-              <Pencil size={14} className="text-gold-contrast" strokeWidth={2.25} />
-            ) : (
-              <Plus size={16} className="text-gold-contrast" strokeWidth={2.25} />
-            )}
+            <Plus size={16} className="text-gold-contrast" strokeWidth={2.25} />
           </div>
           <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-text-muted">
-            {editandoId ? "Editando item" : "Novo item"}
+            Novo item
           </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-end">
-          <div className="flex-1 sm:min-w-40">
-            <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-              Item
-            </label>
-            <input
-              name="item"
-              autoComplete="off"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex: X-Salada…"
-              className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:flex gap-4">
-            <div className="sm:w-44">
-              <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-                Categoria
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value as CategoriaCardapio)}
-                className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-              >
-                {CATEGORIAS_CARDAPIO.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="sm:w-32">
-              <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-                Preço (R$)
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={preco}
-                onChange={(e) => setPreco(e.target.value)}
-                placeholder="0,00"
-                className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            type="submit"
-            disabled={salvando}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gold-gradient hover:opacity-90 transition-opacity text-gold-contrast font-heading font-semibold px-5 py-3 sm:py-2.5 rounded-md disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
-          >
-            {editandoId ? <Pencil size={18} /> : <Plus size={18} />}
-            {editandoId ? "Salvar alterações" : "Adicionar ao cardápio"}
-          </button>
-
-          {editandoId && (
-            <button
-              type="button"
-              onClick={cancelarEdicao}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 text-text-muted hover:text-text text-sm font-heading py-3 sm:py-2 px-3 rounded-md"
-            >
-              <X size={16} />
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
+        <ItemCardapioForm salvando={salvando} onSubmit={adicionar} />
+      </div>
 
       <div className="bg-surface border border-border border-t-2 border-t-gold rounded-sm">
         <div className="flex items-center gap-2 px-4 md:px-6 py-4">
@@ -179,14 +86,14 @@ export default function Cardapio() {
                   <span className="font-mono text-sm text-text">{formatarMoeda(item.preco)}</span>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => iniciarEdicao(item)}
+                      onClick={() => setItemEditando(item)}
                       aria-label={`Editar ${item.nome}`}
                       className="p-3 -m-1 rounded-full text-text-muted hover:text-gold hover:bg-gold/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
                       <Pencil size={16} />
                     </button>
                     <button
-                      onClick={() => remover(item)}
+                      onClick={() => setItemExcluindo(item)}
                       aria-label={`Remover ${item.nome}`}
                       className="p-3 -m-1 rounded-full text-text-muted hover:text-paprika hover:bg-paprika/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
@@ -209,6 +116,47 @@ export default function Cardapio() {
           )}
         </ul>
       </div>
+
+      <Modal
+        aberto={itemEditando !== null}
+        onFechar={() => setItemEditando(null)}
+        titulo="Editar item"
+      >
+        {itemEditando && (
+          <ItemCardapioForm
+            inicial={itemEditando}
+            salvando={salvando}
+            onSubmit={handleSalvarEdicao}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        aberto={itemExcluindo !== null}
+        onFechar={() => setItemExcluindo(null)}
+        titulo="Remover item"
+      >
+        <p className="text-sm text-text">
+          Remover <span className="font-semibold">{itemExcluindo?.nome}</span> do cardápio?
+        </p>
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => setItemExcluindo(null)}
+            className="px-4 py-2 rounded-md text-sm font-heading text-text-muted hover:text-text hover:bg-surface-alt transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmarExclusao}
+            disabled={salvando}
+            className="px-4 py-2 rounded-md text-sm font-heading font-semibold text-white bg-paprika hover:opacity-90 transition-opacity disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-paprika"
+          >
+            Remover
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -18,7 +18,7 @@ public record MenuItemInput(
     string? PhotoUrl
 )
 {
-    private static readonly HashSet<string> ValidCategories = new() { "Lanches", "Bebidas", "Sobremesas", "Pizzas", "Prato Feito"};
+    private static readonly HashSet<string> ValidCategories = new() { "Lanches", "Bebidas", "Sobremesas", "Pizzas", "Prato Feito", "Massas"};
 
     public string? Validate()
     {

@@ -25,7 +25,7 @@ public class MenuService
             throw new ValidationException(error);
 
         var created = await _repository.CreateAsync(input);
-        await _audit.RecordAsync("create", "menu", $"created menu item '{created.Name}'");
+        await _audit.RecordAsync("create", "menu", $"adicionou '{created.Name}' ao cardápio");
         return created;
     }
 
@@ -37,7 +37,7 @@ public class MenuService
 
         var updated = await _repository.UpdateAsync(id, input);
         if (updated is not null)
-            await _audit.RecordAsync("update", "menu", $"updated menu item '{updated.Name}'");
+            await _audit.RecordAsync("update", "menu", $"atualizou '{updated.Name}' no cardápio");
         return updated;
     }
 
@@ -45,7 +45,7 @@ public class MenuService
     {
         var removed = await _repository.DeactivateAsync(id);
         if (removed)
-            await _audit.RecordAsync("delete", "menu", $"removed menu item {id}");
+            await _audit.RecordAsync("delete", "menu", $"removeu um item do cardápio ({id})");
         return removed;
     }
 }

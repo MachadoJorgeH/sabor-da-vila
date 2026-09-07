@@ -14,24 +14,26 @@ import {
   ChevronRight,
   History,
   ScrollText,
+  Users,
 } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import logo from "../assets/logo.png";
-import { auth } from "../firebase";
-import { signOut } from "firebase/auth";
+import { useAuth } from "../context/useAuth";
 
-const navItems = [
+const navItems: { to: string; label: string; icon: typeof Package; adminOnly?: boolean }[] = [
   { to: "/cardapio", label: "Cardápio", icon: UtensilsCrossed },
   { to: "/estoque", label: "Estoque", icon: Package },
   { to: "/pedidos", label: "Pedidos", icon: ClipboardList },
-  { to: "/financeiro", label: "Financeiro", icon: TrendingUp },
+  { to: "/financeiro", label: "Financeiro", icon: TrendingUp, adminOnly: true },
   { to: "/historico", label: "Histórico", icon: History },
   { to: "/logs", label: "Logs", icon: ScrollText },
+  { to: "/usuarios", label: "Usuários", icon: Users, adminOnly: true },
 ];
 
 export default function Layout() {
   const { tema, alternar } = useTheme();
   const navigate = useNavigate();
+  const { sair, usuario } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
   const [colapsada, setColapsada] = useState(
     () => localStorage.getItem("sidebarColapsada") === "1"
@@ -41,9 +43,9 @@ export default function Layout() {
     localStorage.setItem("sidebarColapsada", colapsada ? "1" : "0");
   }, [colapsada]);
 
-  async function handleSair() {
-    await signOut(auth);
-    navigate("/");
+  function handleSair() {
+  sair();
+  navigate("/");
   }
 
   return (
@@ -91,7 +93,9 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {navItems
+            .filter((item) => !item.adminOnly || usuario?.role === "admin")
+            .map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

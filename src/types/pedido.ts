@@ -1,5 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
-
 export type StatusPedido = "recebido" | "em_preparo" | "pronto" | "entregue";
 
 export type OrigemPedido = "salao" | "app";
@@ -23,7 +21,7 @@ export interface Pedido {
   itens: ItemPedido[];
   observacao?: string;
   status: StatusPedido;
-  criadoEm: Timestamp;
+  criadoEm: string;
 }
 
 export const PROXIMO_STATUS: Record<StatusPedido, StatusPedido | null> = {

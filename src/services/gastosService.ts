@@ -1,75 +1,56 @@
-import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  serverTimestamp,
-  Timestamp,
-} from "firebase/firestore";
-import type { QueryConstraint } from "firebase/firestore";
-import type { Gasto } from "../types/gasto";
-import { registrarLog } from "./logsService";
+import { api } from "../api/client";
+import type { Gasto, CategoriaGasto } from "../types/gasto";
 
-const gastosRef = collection(db, "gastos");
+interface ExpenseApi {
+  id: string;
+  description: string;
+  category: string;
+  amountCents: number;
+  createdAt: string;
+}
 
-export function ouvirGastos(
-  callback: (gastos: Gasto[]) => void,
-  opcoes?: { inicio?: Date; fim?: Date }
-) {
-  const restricoes: QueryConstraint[] = [orderBy("criadoEm", "desc")];
+const CATEGORIA_PARA_API: Record<string, string> = {
+  "Contas (água/luz/internet)": "Contas",
+};
 
-  if (opcoes?.inicio) {
-    restricoes.push(where("criadoEm", ">=", Timestamp.fromDate(opcoes.inicio)));
-  }
-  if (opcoes?.fim) {
-    restricoes.push(where("criadoEm", "<", Timestamp.fromDate(opcoes.fim)));
-  }
+const CATEGORIA_DA_API: Record<string, string> = {
+  Contas: "Contas (água/luz/internet)",
+};
 
-  const q = query(gastosRef, ...restricoes);
+function paraGasto(expense: ExpenseApi): Gasto {
+  return {
+    id: expense.id,
+    descricao: expense.description,
+    categoria: (CATEGORIA_DA_API[expense.category] ?? expense.category) as CategoriaGasto,
+    valor: expense.amountCents / 100,
+    criadoEm: expense.createdAt,
+  };
+}
 
-  return onSnapshot(q, (snapshot) => {
-    const gastos = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Gasto[];
+function paraExpenseInput(gasto: Omit<Gasto, "id" | "criadoEm">) {
+  return {
+    description: gasto.descricao,
+    category: CATEGORIA_PARA_API[gasto.categoria] ?? gasto.categoria,
+    amountCents: Math.round(gasto.valor * 100),
+  };
+}
 
-    callback(gastos);
-  });
+export async function listarGastos(): Promise<Gasto[]> {
+  const dados = await api.get<ExpenseApi[]>("/api/expenses");
+  return dados
+    .map(paraGasto)
+    .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
 }
 
 export async function adicionarGasto(gasto: Omit<Gasto, "id" | "criadoEm">) {
-  await addDoc(gastosRef, {
-    ...gasto,
-    criadoEm: serverTimestamp(),
-  });
-  await registrarLog({
-    acao: "criar",
-    entidade: "gasto",
-    descricao: `Lançou gasto "${gasto.descricao}" (R$ ${gasto.valor.toFixed(2)})`,
-  });
+  await api.post("/api/expenses", paraExpenseInput(gasto));
 }
 
 export async function atualizarGasto(id: string, gasto: Omit<Gasto, "id" | "criadoEm">) {
-  await updateDoc(doc(db, "gastos", id), gasto);
-  await registrarLog({
-    acao: "atualizar",
-    entidade: "gasto",
-    descricao: `Atualizou gasto "${gasto.descricao}" (R$ ${gasto.valor.toFixed(2)})`,
-  });
+  await api.put(`/api/expenses/${id}`, paraExpenseInput(gasto));
 }
 
 export async function removerGasto(gasto: Gasto) {
   if (!gasto.id) return;
-  await deleteDoc(doc(db, "gastos", gasto.id));
-  await registrarLog({
-    acao: "remover",
-    entidade: "gasto",
-    descricao: `Removeu gasto "${gasto.descricao}" (R$ ${gasto.valor.toFixed(2)})`,
-  });
+  await api.delete(`/api/expenses/${gasto.id}`);
 }

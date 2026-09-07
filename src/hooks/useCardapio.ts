@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ouvirCardapio,
+  listarCardapio,
   adicionarItemCardapio,
   atualizarItemCardapio,
   removerItemCardapio,
@@ -11,15 +11,23 @@ export function useCardapio() {
   const [itens, setItens] = useState<ItemCardapio[]>([]);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = ouvirCardapio(setItens);
-    return () => unsubscribe();
+  const carregar = useCallback(async () => {
+    try {
+      setItens(await listarCardapio());
+    } catch (erro) {
+      console.error("Falha ao carregar o cardápio:", erro);
+    }
   }, []);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   async function adicionar(item: Omit<ItemCardapio, "id">) {
     setSalvando(true);
     try {
       await adicionarItemCardapio(item);
+      await carregar();
     } finally {
       setSalvando(false);
     }
@@ -29,15 +37,21 @@ export function useCardapio() {
     setSalvando(true);
     try {
       await atualizarItemCardapio(id, item);
+      await carregar();
     } finally {
       setSalvando(false);
     }
   }
 
-  function remover(item: ItemCardapio) {
+    async function remover(item: ItemCardapio) {
     if (!item.id) return;
-    const confirmou = window.confirm(`Remover "${item.nome}" do cardápio?`);
-    if (confirmou) removerItemCardapio(item);
+    setSalvando(true);
+    try {
+      await removerItemCardapio(item);
+      await carregar();
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return { itens, salvando, adicionar, atualizar, remover };

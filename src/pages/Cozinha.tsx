@@ -27,7 +27,7 @@ function Ticket({ pedido, agora, acao, onAvancar }: {
   acao: string | null;
   onAvancar: () => void;
 }) {
-  const decorrido = pedido.criadoEm ? agora.getTime() - pedido.criadoEm.toDate().getTime() : 0;
+  const decorrido = pedido.criadoEm ? agora.getTime() - new Date(pedido.criadoEm).getTime() : 0;
   const minutos = decorrido / 60000;
   const urgente = minutos >= MIN_URGENTE;
   const aviso = minutos >= MIN_AVISO && !urgente;

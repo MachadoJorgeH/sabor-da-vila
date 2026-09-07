@@ -1,4 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
 import type { ItemPedido, OrigemPedido } from "./pedido";
 
 export interface Venda {
@@ -9,5 +8,5 @@ export interface Venda {
   itens: ItemPedido[];
   observacao?: string;
   total: number;
-  criadoEm: Timestamp;
+  criadoEm: string;
 }

@@ -10,6 +10,7 @@ using SaborDaVila.Api.Expenses;
 using SaborDaVila.Api.Audit;
 using SaborDaVila.Api.Orders;
 using SaborDaVila.Api.Finance;
+using SaborDaVila.Api.Sales;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,7 @@ builder.Services.AddScoped<MenuRepository>();
 builder.Services.AddScoped<MenuService>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<InventoryRepository>();
 builder.Services.AddScoped<InventoryService>();
 builder.Services.AddScoped<ExpenseRepository>();
@@ -30,6 +32,9 @@ builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<FinanceRepository>();
 builder.Services.AddScoped<FinanceService>();
+builder.Services.AddScoped<SaleRepository>();
+builder.Services.AddScoped<SaleService>();
+builder.Services.AddSignalR();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
@@ -57,6 +62,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", policy => policy.RequireRole("admin"));
 
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173", "http://127.0.0.1:5173"];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+        policy.WithOrigins(corsOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials());
+});
+
 var app = builder.Build();
 if (args.Length > 0 && args[0] == "create-user")
 {
@@ -69,15 +86,19 @@ if (args.Length > 0 && args[0] == "create-user")
 }
 
 app.UseExceptionHandler();
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapMenuEndpoints();
 app.MapAuthEndpoints();
+app.MapUsersEndpoints();
 app.MapInventoryEndpoints();
 app.MapExpenseEndpoints();
 app.MapAuditEndpoints();
 app.MapOrderEndpoints();
 app.MapFinanceEndpoints();
+app.MapSaleEndpoints();
+app.MapHub<OrdersHub>("/hubs/orders");
 
 app.MapGet("/api/health", async (NpgsqlDataSource db) =>
 {

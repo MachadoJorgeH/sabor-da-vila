@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Plus, X, ArrowRight, Trash2, ClipboardList, Store, Bike, History, StickyNote, ChefHat } from "lucide-react";
+import { Plus, Minus, ArrowRight, Trash2, ClipboardList, Store, Bike, History, StickyNote, ChefHat } from "lucide-react";
 import { usePedidos } from "../hooks/usePedidos";
 import { useCardapio } from "../hooks/useCardapio";
-import { ItemCardapioSelect } from "../components/ItemCardapioSelect";
 import { LABEL_STATUS, LABEL_ORIGEM, totalPedido } from "../types/pedido";
 import type { ItemPedido, Pedido, StatusPedido, OrigemPedido } from "../types/pedido";
-import { formatarHora } from "../utils/formatDate";
+import type { ItemCardapio } from "../types/cardapio";
+import { formatarHoraISO } from "../utils/formatDate";
 import { formatarMoeda } from "../utils/formatCurrency";
+import Modal from "../components/Modal";
+import SeletorItensPedido from "../components/SeletorItensPedido";
 
 const COLUNAS: StatusPedido[] = ["recebido", "em_preparo", "pronto", "entregue"];
 const MAX_ENTREGUES_VISIVEIS = 12;
@@ -20,8 +22,7 @@ export default function Pedidos() {
   const [origem, setOrigem] = useState<OrigemPedido>("salao");
   const [observacao, setObservacao] = useState("");
   const [itens, setItens] = useState<ItemPedido[]>([]);
-  const [cardapioIdSelecionado, setCardapioIdSelecionado] = useState("");
-  const [itemQtd, setItemQtd] = useState("1");
+  const [pedidoExcluindo, setPedidoExcluindo] = useState<Pedido | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const abaParam = searchParams.get("status");
@@ -33,26 +34,37 @@ export default function Pedidos() {
     setSearchParams(status === "recebido" ? {} : { status });
   }
 
-  function adicionarItemNaLista() {
-    const itemCardapio = cardapio.find((c) => c.id === cardapioIdSelecionado);
-    if (!itemCardapio || !itemCardapio.id) return;
-
-    setItens([
-      ...itens,
-      {
-        cardapioId: itemCardapio.id,
-        nome: itemCardapio.nome,
-        precoUnitario: itemCardapio.preco,
-        quantidade: Number(itemQtd) || 1,
-      },
-    ]);
-    setCardapioIdSelecionado("");
-    setItemQtd("1");
+  function adicionarAoCarrinho(item: ItemCardapio) {
+    if (!item.id) return;
+    const id = item.id;
+    setItens((atual) => {
+      const existente = atual.find((i) => i.cardapioId === id);
+      if (existente) {
+        return atual.map((i) =>
+          i.cardapioId === id ? { ...i, quantidade: i.quantidade + 1 } : i,
+        );
+      }
+      return [
+        ...atual,
+        { cardapioId: id, nome: item.nome, precoUnitario: item.preco, quantidade: 1 },
+      ];
+    });
   }
 
-  function removerItemDaLista(index: number) {
-    setItens(itens.filter((_, i) => i !== index));
+  function alterarQtd(cardapioId: string, delta: number) {
+    setItens((atual) =>
+      atual
+        .map((i) =>
+          i.cardapioId === cardapioId ? { ...i, quantidade: i.quantidade + delta } : i,
+        )
+        .filter((i) => i.quantidade > 0),
+    );
   }
+
+  const quantidades: Record<string, number> = Object.fromEntries(
+    itens.map((i): [string, number] => [i.cardapioId, i.quantidade]),
+  );
+  const totalCarrinho = itens.reduce((s, i) => s + i.precoUnitario * i.quantidade, 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,6 +75,12 @@ export default function Pedidos() {
     setOrigem("salao");
     setObservacao("");
     setItens([]);
+  }
+
+  async function handleConfirmarExclusao() {
+    if (!pedidoExcluindo) return;
+    await remover(pedidoExcluindo);
+    setPedidoExcluindo(null);
   }
 
   function renderColuna(status: StatusPedido) {
@@ -106,7 +124,7 @@ export default function Pedidos() {
                   </span>
                 </div>
                 <button
-                  onClick={() => remover(pedido)}
+                  onClick={() => setPedidoExcluindo(pedido)}
                   aria-label={`Remover pedido de ${pedido.mesa}`}
                   className="p-2.5 -m-2.5 rounded-full text-text-muted hover:text-paprika hover:bg-paprika/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                 >
@@ -135,7 +153,7 @@ export default function Pedidos() {
                 <span className="font-mono text-xs font-semibold text-gold">
                   {formatarMoeda(totalPedido(pedido))}
                 </span>
-                <span className="font-mono text-[10px] text-text-muted">{formatarHora(pedido.criadoEm)}</span>
+                <span className="font-mono text-[10px] text-text-muted">{formatarHoraISO(pedido.criadoEm)}</span>
               </div>
 
               {status !== "entregue" && (
@@ -256,65 +274,60 @@ export default function Pedidos() {
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
-          <div className="flex-1 sm:min-w-48">
-            <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-              Item do cardápio
-            </label>
-            <ItemCardapioSelect
-              itens={cardapio}
-              value={cardapioIdSelecionado}
-              onChange={setCardapioIdSelecionado}
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <div className="w-20">
-              <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-                Qtd
-              </label>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={itemQtd}
-                onChange={(e) => setItemQtd(e.target.value)}
-                className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={adicionarItemNaLista}
-              disabled={!cardapioIdSelecionado}
-              className="self-end flex items-center gap-2 bg-gold-gradient text-gold-contrast hover:bg-gold-light font-heading text-sm px-4 py-3 sm:py-2 rounded-md transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-            >
-              <Plus size={16} />
-              Item
-            </button>
-          </div>
+        <div>
+          <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
+            Itens
+          </label>
+          <SeletorItensPedido
+            itens={cardapio}
+            quantidades={quantidades}
+            onAdicionar={adicionarAoCarrinho}
+          />
         </div>
 
         {itens.length > 0 && (
-          <ul className="flex flex-wrap gap-2">
-            {itens.map((item, index) => (
-              <li
-                key={index}
-                className="flex items-center gap-2 bg-surface-alt rounded-md pl-3 pr-1.5 py-1.5 text-sm text-text"
-              >
-                <span className="font-mono text-xs">
-                  {item.quantidade}x {item.nome} — {formatarMoeda(item.precoUnitario * item.quantidade)}
+          <div className="border border-border rounded-md divide-y divide-dashed divide-gold/25">
+            {itens.map((item) => (
+              <div key={item.cardapioId} className="flex items-center gap-2 px-3 py-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-text truncate">{item.nome}</p>
+                  <span className="font-mono text-[11px] text-text-muted">
+                    {formatarMoeda(item.precoUnitario)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => alterarQtd(item.cardapioId, -1)}
+                    aria-label={`Menos um ${item.nome}`}
+                    className="p-1.5 rounded-full border border-border text-text-muted hover:text-text hover:border-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className="font-mono text-sm w-6 text-center">{item.quantidade}</span>
+                  <button
+                    type="button"
+                    onClick={() => alterarQtd(item.cardapioId, 1)}
+                    aria-label={`Mais um ${item.nome}`}
+                    className="p-1.5 rounded-full border border-border text-text-muted hover:text-text hover:border-gold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                <span className="font-mono text-sm text-text w-20 text-right shrink-0">
+                  {formatarMoeda(item.precoUnitario * item.quantidade)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => removerItemDaLista(index)}
-                  aria-label={`Remover ${item.nome} do pedido`}
-                  className="p-2 rounded-full text-text-muted hover:text-paprika hover:bg-paprika/10 transition-colors"
-                >
-                  <X size={13} />
-                </button>
-              </li>
+              </div>
             ))}
-          </ul>
+            <div className="flex justify-between items-center px-3 py-2 bg-surface-alt">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">
+                Total
+              </span>
+              <span className="font-mono text-sm font-semibold text-gold">
+                {formatarMoeda(totalCarrinho)}
+              </span>
+            </div>
+          </div>
         )}
 
         <div>
@@ -369,6 +382,34 @@ export default function Pedidos() {
       <div className="hidden md:grid md:grid-cols-4 gap-4">
         {COLUNAS.map((status) => renderColuna(status))}
       </div>
+
+      <Modal
+        aberto={pedidoExcluindo !== null}
+        onFechar={() => setPedidoExcluindo(null)}
+        titulo="Remover pedido"
+      >
+        <p className="text-sm text-text">
+          Remover o pedido da mesa{" "}
+          <span className="font-semibold">{pedidoExcluindo?.mesa}</span>?
+        </p>
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => setPedidoExcluindo(null)}
+            className="px-4 py-2 rounded-md text-sm font-heading text-text-muted hover:text-text hover:bg-surface-alt transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmarExclusao}
+            disabled={salvando}
+            className="px-4 py-2 rounded-md text-sm font-heading font-semibold text-white bg-paprika hover:opacity-90 transition-opacity disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-paprika"
+          >
+            Remover
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

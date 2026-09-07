@@ -4,7 +4,7 @@ import { Search, Store, Bike, Archive } from "lucide-react";
 import { useHistorico } from "../hooks/useHistorico";
 import { LABEL_ORIGEM } from "../types/pedido";
 import type { OrigemPedido } from "../types/pedido";
-import { formatarDataHora } from "../utils/formatDate";
+import { formatarDataHoraISO } from "../utils/formatDate";
 import { formatarMoeda } from "../utils/formatCurrency";
 
 function hojeISO(): string {
@@ -197,7 +197,7 @@ export default function Historico() {
                       {formatarMoeda(venda.total)}
                     </span>
                     <span className="block font-mono text-[10px] text-text-muted mt-0.5">
-                      {formatarDataHora(venda.criadoEm)}
+                      {formatarDataHoraISO(venda.criadoEm)}
                     </span>
                   </div>
                 </div>

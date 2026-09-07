@@ -11,7 +11,8 @@ public record Expense(
 public record ExpenseInput(
     string Description,
     string Category,
-    long AmountCents
+    long AmountCents,
+    DateTime? CreatedAt = null
 )
 {
     private static readonly HashSet<string> ValidCategories =

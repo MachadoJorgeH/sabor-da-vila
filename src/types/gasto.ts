@@ -1,5 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
-
 export const CATEGORIAS_GASTO = [
   "Aluguel",
   "Fornecedores",
@@ -16,5 +14,5 @@ export interface Gasto {
   descricao: string;
   categoria: CategoriaGasto;
   valor: number;
-  criadoEm: Timestamp;
+  criadoEm: string;
 }

@@ -1,38 +1,43 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ouvirPedidos,
+  listarPedidos,
   criarPedido,
-  atualizarStatusPedido,
+  avancarStatusPedido,
   removerPedido,
+  conectarPedidos,
 } from "../services/pedidosService";
-import { registrarVenda } from "../services/vendasService";
-import { PROXIMO_STATUS, totalPedido } from "../types/pedido";
 import type { Pedido, ItemPedido, OrigemPedido } from "../types/pedido";
 
 export function usePedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = ouvirPedidos(setPedidos);
-    return () => unsubscribe();
+  const carregar = useCallback(async () => {
+    try {
+      setPedidos(await listarPedidos());
+    } catch (erro) {
+      console.error("Falha ao carregar os pedidos:", erro);
+    }
   }, []);
+
+  useEffect(() => {
+    carregar();
+    const conexao = conectarPedidos(carregar);
+    return () => {
+      conexao.stop();
+    };
+  }, [carregar]);
 
   async function criar(
     mesa: string,
     itens: ItemPedido[],
     origem: OrigemPedido = "salao",
-    observacao?: string
+    observacao?: string,
   ) {
     setSalvando(true);
     try {
-      await criarPedido({
-        mesa,
-        origem,
-        itens,
-        status: "recebido",
-        ...(observacao?.trim() ? { observacao: observacao.trim() } : {}),
-      });
+      await criarPedido(mesa, origem, observacao?.trim() || undefined, itens);
+      await carregar();
     } finally {
       setSalvando(false);
     }
@@ -40,27 +45,19 @@ export function usePedidos() {
 
   async function avancarStatus(pedido: Pedido) {
     if (!pedido.id) return;
-    const proximo = PROXIMO_STATUS[pedido.status];
-    if (!proximo) return;
-
-    await atualizarStatusPedido(pedido, proximo);
-
-    if (proximo === "entregue") {
-      await registrarVenda({
-        pedidoId: pedido.id,
-        mesa: pedido.mesa,
-        origem: pedido.origem ?? "salao",
-        itens: pedido.itens,
-        ...(pedido.observacao ? { observacao: pedido.observacao } : {}),
-        total: totalPedido(pedido),
-      });
-    }
+    await avancarStatusPedido(pedido.id);
+    await carregar();
   }
 
-  function remover(pedido: Pedido) {
+  async function remover(pedido: Pedido) {
     if (!pedido.id) return;
-    const confirmou = window.confirm(`Remover pedido da mesa ${pedido.mesa}?`);
-    if (confirmou) removerPedido(pedido);
+    setSalvando(true);
+    try {
+      await removerPedido(pedido.id);
+      await carregar();
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return { pedidos, salvando, avancarStatus, criar, remover };

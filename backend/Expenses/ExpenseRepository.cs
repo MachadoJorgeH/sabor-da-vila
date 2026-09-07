@@ -42,8 +42,8 @@ public class ExpenseRepository
     public async Task<Expense> CreateAsync(ExpenseInput input)
     {
         const string sql = """
-            INSERT INTO expenses (description, category, amount_cents)
-            VALUES (@Description, @Category, @AmountCents)
+            INSERT INTO expenses (description, category, amount_cents, created_at)
+            VALUES (@Description, @Category, @AmountCents, COALESCE(@CreatedAt, now()))
             RETURNING id AS "Id", description AS "Description", category AS "Category",
                       amount_cents AS "AmountCents", created_at AS "CreatedAt"
             """;

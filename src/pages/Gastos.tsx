@@ -1,46 +1,27 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Receipt, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Receipt } from "lucide-react";
 import { useGastos } from "../hooks/useGastos";
-import { CATEGORIAS_GASTO } from "../types/gasto";
-import type { Gasto, CategoriaGasto } from "../types/gasto";
-import { formatarDataHora } from "../utils/formatDate";
+import type { Gasto } from "../types/gasto";
+import { formatarDataHoraISO } from "../utils/formatDate";
 import { formatarMoeda } from "../utils/formatCurrency";
+import Modal from "../components/Modal";
+import GastoForm from "../components/GastoForm";
 
 export default function Gastos() {
   const { gastos, salvando, adicionar, atualizar, remover } = useGastos();
+  const [gastoEditando, setGastoEditando] = useState<Gasto | null>(null);
+  const [gastoExcluindo, setGastoExcluindo] = useState<Gasto | null>(null);
 
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [descricao, setDescricao] = useState("");
-  const [valor, setValor] = useState("");
-  const [categoria, setCategoria] = useState<CategoriaGasto>(CATEGORIAS_GASTO[0]);
-
-  function iniciarEdicao(gasto: Gasto) {
-    setEditandoId(gasto.id ?? null);
-    setDescricao(gasto.descricao);
-    setValor(String(gasto.valor));
-    setCategoria(gasto.categoria);
+  async function handleSalvarEdicao(dados: Omit<Gasto, "id" | "criadoEm">) {
+    if (!gastoEditando?.id) return;
+    await atualizar(gastoEditando.id, dados);
+    setGastoEditando(null);
   }
 
-  function cancelarEdicao() {
-    setEditandoId(null);
-    setDescricao("");
-    setValor("");
-    setCategoria(CATEGORIAS_GASTO[0]);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!descricao || !valor) return;
-
-    const dados = { descricao, valor: Number(valor), categoria };
-
-    if (editandoId) {
-      await atualizar(editandoId, dados);
-    } else {
-      await adicionar(dados);
-    }
-
-    cancelarEdicao();
+  async function handleConfirmarExclusao() {
+    if (!gastoExcluindo) return;
+    await remover(gastoExcluindo);
+    setGastoExcluindo(null);
   }
 
   const totalGastos = gastos.reduce((soma, gasto) => soma + gasto.valor, 0);
@@ -66,92 +47,18 @@ export default function Gastos() {
         </div>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-card-soft rounded-lg shadow-sm p-4 md:p-6 space-y-4"
-      >
+      <div className="bg-card-soft rounded-lg shadow-sm p-4 md:p-6 space-y-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gold-gradient flex items-center justify-center shrink-0">
-            {editandoId ? (
-              <Pencil size={14} className="text-gold-contrast" strokeWidth={2.25} />
-            ) : (
-              <Plus size={16} className="text-gold-contrast" strokeWidth={2.25} />
-            )}
+            <Plus size={16} className="text-gold-contrast" strokeWidth={2.25} />
           </div>
           <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-text-muted">
-            {editandoId ? "Editando gasto" : "Novo gasto"}
+            Novo gasto
           </span>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-end">
-          <div className="flex-1 sm:min-w-40">
-            <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-              Descrição
-            </label>
-            <input
-              name="descricao"
-              autoComplete="off"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex: Conta de luz…"
-              className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:flex gap-4">
-            <div className="sm:w-52">
-              <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-                Categoria
-              </label>
-              <select
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value as CategoriaGasto)}
-                className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-              >
-                {CATEGORIAS_GASTO.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="sm:w-32">
-              <label className="block font-mono text-[11px] tracking-[0.15em] uppercase text-text-muted mb-1.5">
-                Valor (R$)
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={valor}
-                onChange={(e) => setValor(e.target.value)}
-                placeholder="0,00"
-                className="w-full border border-border rounded-md px-3 py-3 sm:py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-gold bg-surface text-text"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            type="submit"
-            disabled={salvando}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gold-gradient hover:opacity-90 transition-opacity text-gold-contrast font-heading font-semibold px-5 py-3 sm:py-2.5 rounded-md disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
-          >
-            {editandoId ? <Pencil size={18} /> : <Plus size={18} />}
-            {editandoId ? "Salvar alterações" : "Adicionar gasto"}
-          </button>
-
-          {editandoId && (
-            <button
-              type="button"
-              onClick={cancelarEdicao}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 text-text-muted hover:text-text text-sm font-heading py-3 sm:py-2 px-3 rounded-md"
-            >
-              <X size={16} />
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
+        <GastoForm salvando={salvando} onSubmit={adicionar} />
+      </div>
 
       <div className="bg-surface border border-border border-t-2 border-t-gold rounded-sm">
         <div className="flex items-center gap-2 px-4 md:px-6 py-4">
@@ -175,7 +82,7 @@ export default function Gastos() {
                       {gasto.categoria}
                     </span>
                     <span className="font-mono text-[10px] text-text-muted">
-                      {formatarDataHora(gasto.criadoEm)}
+                      {formatarDataHoraISO(gasto.criadoEm)}
                     </span>
                   </div>
                 </div>
@@ -183,14 +90,14 @@ export default function Gastos() {
                   <span className="font-mono text-sm text-paprika/90">{formatarMoeda(gasto.valor)}</span>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => iniciarEdicao(gasto)}
+                      onClick={() => setGastoEditando(gasto)}
                       aria-label={`Editar ${gasto.descricao}`}
                       className="p-3 -m-1 rounded-full text-text-muted hover:text-gold hover:bg-gold/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
                       <Pencil size={16} />
                     </button>
                     <button
-                      onClick={() => remover(gasto)}
+                      onClick={() => setGastoExcluindo(gasto)}
                       aria-label={`Remover ${gasto.descricao}`}
                       className="p-3 -m-1 rounded-full text-text-muted hover:text-paprika hover:bg-paprika/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
@@ -213,6 +120,47 @@ export default function Gastos() {
           )}
         </ul>
       </div>
+
+      <Modal
+        aberto={gastoEditando !== null}
+        onFechar={() => setGastoEditando(null)}
+        titulo="Editar gasto"
+      >
+        {gastoEditando && (
+          <GastoForm
+            inicial={gastoEditando}
+            salvando={salvando}
+            onSubmit={handleSalvarEdicao}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        aberto={gastoExcluindo !== null}
+        onFechar={() => setGastoExcluindo(null)}
+        titulo="Remover gasto"
+      >
+        <p className="text-sm text-text">
+          Remover o gasto <span className="font-semibold">{gastoExcluindo?.descricao}</span>?
+        </p>
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={() => setGastoExcluindo(null)}
+            className="px-4 py-2 rounded-md text-sm font-heading text-text-muted hover:text-text hover:bg-surface-alt transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmarExclusao}
+            disabled={salvando}
+            className="px-4 py-2 rounded-md text-sm font-heading font-semibold text-white bg-paprika hover:opacity-90 transition-opacity disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-paprika"
+          >
+            Remover
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
